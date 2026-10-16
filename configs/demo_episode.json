@@ -1,0 +1,22 @@
+{
+  "episode_id": "demo_001",
+  "initial_instruction": "Go to the kitchen.",
+  "initial_goal": "kitchen",
+  "max_steps": 20,
+  "events": [
+    {
+      "event_id": "replace_kitchen_with_bedroom",
+      "trigger": {
+        "type": "step",
+        "value": 5
+      },
+      "utterance": "Instead, go to the bedroom.",
+      "task_update": {
+        "operation": "replace_goal",
+        "old_goal": "kitchen",
+        "new_goal": "bedroom"
+      }
+    }
+  ]
+}
+

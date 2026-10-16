@@ -1,0 +1,704 @@
+\documentclass[10pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage[nameinlink,capitalize]{cleveref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!55!black,
+  citecolor=green!45!black,
+  urlcolor=blue!65!black
+}
+
+\newcommand{\method}{MI-VLN}
+\newcommand{\tbd}[1]{\textcolor{red!75!black}{[TBD: #1]}}
+
+\title{\textbf{Ask or Intervene: A Benchmark for\\
+Mixed-Initiative Vision-and-Language Navigation}}
+\author{Anonymous Authors}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Vision-and-language navigation (VLN) typically assumes that a robot receives
+a fixed instruction before execution and then navigates autonomously.
+Real service robots instead operate under evolving human intent: a user may
+correct a mistaken turn, add a constraint, replace the destination, or answer
+a robot's request for assistance. Importantly, the user need not continuously
+monitor the robot, but must be able to intervene whenever necessary.
+We introduce \method, a benchmark for \emph{mixed-initiative} VLN in indoor
+service environments. The benchmark models two complementary interaction
+directions: robot-initiated help requests and human-initiated interventions.
+It evaluates three tracks---human-initiated, robot-initiated, and fully
+mixed-initiative navigation---under asynchronous user availability.
+To isolate the value of interaction, each episode contains a shared pre-event
+trajectory and counterfactual post-event branches with matched initial
+conditions. We define intervention windows, dynamic task specifications,
+interaction-aware metrics, and a reproducible annotation protocol based on
+Habitat 3.0 and HSSD scenes. We further propose a baseline agent that combines
+visual-spatial memory, dynamic task memory, an initiative manager, and a
+language-conditioned navigator. Experiments are designed to measure navigation
+success, recovery efficiency, communication cost, intervention timing, and
+robustness to delayed human responses. \tbd{Insert the main quantitative
+finding after completing experiments.}
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+An instruction such as ``go to the kitchen and stop beside the table'' is
+rarely immutable in a real home. While the robot is moving, a user may notice
+that the intended table was ambiguous, ask the robot to avoid a wet floor, or
+change the destination because the household task has changed. Conversely, the
+robot may recognize that its observation is ambiguous and ask whether it
+should take the left or right corridor. These interactions form a continuous
+decision process in which control of the dialogue can shift between the human
+and the robot.
+
+Most VLN benchmarks evaluate a different setting: an agent receives a fixed
+natural-language instruction and is judged primarily by whether it reaches a
+static goal \cite{anderson2018r2r,ku2020rxr,krantz2020beyond}. Interactive VLN
+work has studied dialogue-based assistance or robot help-seeking
+\cite{thomason2020cvdn,nguyen2019hanna,zhu2020cmn}, while online robot
+correction has studied how language modifies plans or policies
+\cite{sharma2022correcting,broad2017language}. However, a practical service
+robot must support both directions of initiative in the same episode. It must
+decide when to act, when to ask, how to incorporate unsolicited corrections,
+and how to proceed when a human is temporarily unavailable.
+
+This paper introduces \method, a benchmark that treats interaction as part of
+the navigation problem rather than as an external reset mechanism. A human
+may intervene at any point, but is not assumed to watch every step. Likewise,
+the robot may request assistance, but unnecessary questions incur a cost.
+Messages update a structured task state without erasing the agent's navigation
+history. The benchmark therefore exposes a central trade-off: autonomous
+progress versus timely, useful communication.
+
+Our contributions are:
+\begin{itemize}[leftmargin=1.4em]
+  \item We formulate mixed-initiative VLN with bidirectional initiative,
+  asynchronous human availability, and a dynamic language-defined task state.
+  \item We design a household-service benchmark with three evaluation tracks,
+  controlled intervention windows, counterfactual branches, and event-level
+  annotations.
+  \item We introduce metrics that jointly evaluate task success, recovery,
+  communication cost, timing quality, and human effort.
+  \item We provide a modular baseline and an experimental protocol for
+  studying when an agent should ask, how it should adapt, and when human
+  intervention is most valuable.
+\end{itemize}
+
+\begin{figure}[t]
+\centering
+\fbox{\begin{minipage}{0.94\linewidth}
+\small
+\textbf{Episode timeline.}
+The robot receives an initial instruction and navigates autonomously.
+At an event window, either (a) the human intervenes with a correction or a
+new constraint, or (b) the robot asks a targeted question and may receive a
+delayed answer. The interaction updates the current task specification; the
+physical state and navigation history are preserved. Evaluation continues
+until success, failure, timeout, or explicit termination.
+\end{minipage}}
+\caption{Mixed-initiative navigation as a continuous, interruptible process.
+The benchmark does not require continuous human observation.}
+\label{fig:overview}
+\end{figure}
+
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{Vision-and-language navigation.}
+R2R established instruction-guided navigation in photo-realistic indoor
+environments \cite{anderson2018r2r}. Subsequent benchmarks expanded language,
+path diversity, and continuous control
+\cite{ku2020rxr,krantz2020beyond,krantz2023iterative}. These settings usually
+treat the instruction and goal as fixed throughout an episode. \method instead
+evaluates how an agent responds when intent changes during execution.
+
+\paragraph{Dialogue and help-seeking in navigation.}
+CVDN studies navigation through question--answer dialogue
+\cite{thomason2020cvdn}. HANNA allows an agent to request help from an
+assistant \cite{nguyen2019hanna}, and later work studies help-request
+generation and collaborative navigation
+\cite{zhu2020cmn,zhu2021scoa,taioli2025collaborative}. These works motivate the
+robot-initiated component of \method. Our benchmark adds unsolicited
+human-initiated intervention, temporary human unavailability, and direct
+comparison between initiative policies.
+
+\paragraph{Online correction and shared autonomy.}
+Language can update a robot policy or repair an erroneous plan during
+execution \cite{broad2017language,sharma2022correcting,cui2023lilac}.
+Shared-autonomy research further emphasizes adjustable control and human effort
+\cite{beer2014levels}. We translate these ideas to embodied VLN, where the
+agent must ground an evolving task specification in egocentric observations
+and long-horizon spatial memory.
+
+\paragraph{Embodied simulation.}
+Habitat provides a scalable platform for embodied AI
+\cite{savva2019habitat}; Habitat 3.0 extends it toward collaborative
+human--robot tasks \cite{puig2024habitat3}. HSSD supplies high-quality,
+semantically annotated residential scenes \cite{khanna2024hssd}. We use these
+assets to construct reproducible household-service episodes.
+
+\section{Task Formulation}
+\label{sec:task}
+
+\subsection{Interaction Model}
+
+At time $t$, the agent receives an egocentric observation
+\begin{equation}
+  o_t = (I_t^{\mathrm{rgb}}, I_t^{\mathrm{depth}}, p_t),
+\end{equation}
+where $p_t$ denotes pose information when available. The interaction history is
+$H_t=\{u_0,m_1,\ldots,m_t\}$, where $u_0$ is the initial instruction and each
+$m_i$ is an optional human or robot message.
+
+The agent chooses from navigation and communication actions:
+\begin{equation}
+  a_t \in \mathcal{A}_{\mathrm{nav}} \cup \mathcal{A}_{\mathrm{ask}},
+\end{equation}
+where $\mathcal{A}_{\mathrm{nav}}$ contains movement and stop actions, and
+$\mathcal{A}_{\mathrm{ask}}$ contains typed help requests. A human message may
+be a correction, route constraint, subgoal insertion, goal replacement,
+clarification, confirmation, or abort command.
+
+Human availability is represented by $h_t\in\{0,1\}$. If the agent asks when
+$h_t=0$, the question may remain unanswered, be answered after a sampled
+delay, or expire according to the evaluation condition. This prevents the
+benchmark from equating ``intervenable'' with ``continuously supervised.''
+
+\subsection{Dynamic Task State}
+
+Instead of repeatedly concatenating all dialogue, we maintain a structured
+task state
+\begin{equation}
+  B_t=(g_t,\mathcal{S}_t,\mathcal{C}_t,\mathcal{R}_t,q_t),
+\end{equation}
+where $g_t$ is the current goal, $\mathcal{S}_t$ is an ordered subgoal list,
+$\mathcal{C}_t$ contains route and safety constraints, $\mathcal{R}_t$
+contains resolved references, and $q_t$ is the current interaction status.
+A message induces an update
+\begin{equation}
+  B_t=f_{\mathrm{update}}(B_{t-1},m_t).
+\end{equation}
+Crucially, this update does not reset the physical state or erase visual and
+spatial memory.
+
+\subsection{Evaluation Tracks}
+
+\begin{enumerate}[leftmargin=1.6em]
+  \item \textbf{Human-Initiated (HI):} the robot cannot ask questions, but
+  must process interventions arriving during navigation.
+  \item \textbf{Robot-Initiated (RI):} the task is fixed unless the robot asks
+  for assistance; asking decisions and question utility are evaluated.
+  \item \textbf{Mixed-Initiative (MI):} both parties may initiate interaction,
+  possibly under delayed or missing human responses.
+\end{enumerate}
+
+The agent seeks to maximize task utility
+\begin{equation}
+  J=R_{\mathrm{task}}
+  -\lambda_{\mathrm{path}}C_{\mathrm{path}}
+  -\lambda_{\mathrm{comm}}C_{\mathrm{comm}}
+  -\lambda_{\mathrm{risk}}C_{\mathrm{risk}},
+\end{equation}
+rather than maximizing success at the cost of unlimited human assistance.
+
+\section{The \method\ Benchmark}
+\label{sec:benchmark}
+
+\subsection{Environment and Embodiment}
+
+The benchmark uses Habitat 3.0 with HSSD residential scenes. The primary
+embodiment is a single mobile service robot with RGB-D sensing and discrete
+short-horizon actions: move forward, turn left, turn right, look up, look down,
+and stop. This constrained action space makes intervention effects easier to
+replay and compare. A continuous-control extension is left for future work.
+
+\subsection{Base Household Tasks}
+
+Episodes cover navigation patterns common in domestic service:
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{Room and object approach:} reach a kitchen counter, bedside
+  table, sofa, charging station, or storage shelf.
+  \item \textbf{Person-oriented service:} navigate to a resident's location,
+  wait nearby, or return to the user after visiting another room.
+  \item \textbf{Multi-stage service:} visit a source location and then a
+  delivery location, represented initially as ordered navigation subgoals.
+  \item \textbf{Constraint-aware routing:} avoid a room, doorway, fragile
+  area, occupied space, or temporarily blocked corridor.
+  \item \textbf{Dynamic intent:} replace the destination, reorder subgoals,
+  cancel an obsolete task, or redirect the robot to an urgent location.
+\end{itemize}
+The first release focuses on navigation and does not require physical object
+manipulation, although task descriptions may supply realistic service context.
+
+\subsection{Intervention Taxonomy}
+
+Each intervention is labeled by its semantic operation:
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{p{0.25\linewidth}p{0.62\linewidth}}
+\toprule
+\textbf{Type} & \textbf{Example and state change}\\
+\midrule
+Directional correction &
+``Not that hallway; turn back and take the door on your left.''\\
+Reference repair &
+``By the table, I meant the small table beside the sofa.''\\
+Constraint addition &
+``Do not enter the nursery; the baby is sleeping.''\\
+Subgoal insertion &
+``Before the kitchen, stop at the charging dock.''\\
+Goal replacement &
+``Forget the bedroom; come back to the living room.''\\
+Priority or abort &
+``Stop there'' or ``Return immediately.''\\
+\bottomrule
+\end{tabular}
+\caption{Human-initiated intervention types in the initial benchmark.}
+\label{tab:interventions}
+\end{table}
+
+Robot questions are similarly typed as direction, landmark, reference,
+constraint, goal, or confirmation queries. Templates may be used for controlled
+training data, while test messages include human paraphrases.
+
+\subsection{Selecting Intervention Times}
+\label{sec:timing}
+
+Interventions should be consequential but not arbitrary. We define candidate
+windows from observable episode events:
+\begin{enumerate}[leftmargin=1.6em]
+  \item \textbf{Pre-error ambiguity:} before a junction with two plausible
+  routes or referents.
+  \item \textbf{Recoverable deviation:} after the agent commits to an
+  incorrect route but before recovery becomes trivial or impossible.
+  \item \textbf{Constraint relevance:} shortly before entering a newly
+  prohibited region.
+  \item \textbf{Intent change:} after meaningful progress, when a replacement
+  goal produces a nontrivial replanning problem.
+  \item \textbf{Safety-critical boundary:} before collision-prone or
+  human-occupied areas, subject to conservative simulator rules.
+\end{enumerate}
+
+For each window, we sample early, middle, and late intervention points. Let
+$\Delta C(t)$ denote the additional optimal path cost caused by waiting until
+$t$ to intervene. Episodes are retained only when intervention changes the
+optimal continuation by at least threshold $\epsilon$ and still permits task
+completion. This yields meaningful timing comparisons without selecting times
+from a particular learned agent's failures alone.
+
+\subsection{Counterfactual Episode Branches}
+
+Each benchmark item stores a shared prefix state $s_\tau$ and several branches:
+\begin{equation}
+  \mathcal{E}=
+  \left(\xi_{0:\tau},e_\tau,
+  \xi_{\tau:T}^{\mathrm{no\text{-}int}},
+  \xi_{\tau:T}^{\mathrm{int}},
+  \xi_{\tau:T}^{\mathrm{oracle}}\right),
+\end{equation}
+where $e_\tau$ is an intervention opportunity. All branches begin from the
+same simulator state. This design supports paired evaluation of no
+interaction, actual interaction, and oracle-timed interaction, reducing
+variance caused by unrelated trajectory differences.
+
+\subsection{Annotation and Quality Control}
+
+Annotation is performed through a Windows client connected to a Linux Habitat
+backend. Annotators receive a short observation clip, a top-down map available
+only to the annotation interface, the current instruction, and the intended
+state update. They produce a natural intervention or response and label its
+semantic operation. A second annotator verifies groundedness, executability,
+and consistency with the intended update. Paraphrase diversity is measured
+with lexical and semantic similarity statistics; contradictory or
+under-specified messages are adjudicated.
+
+\subsection{Data Splits}
+
+We partition by scene into train, validation-seen, validation-unseen, and
+test-unseen sets. Test splits additionally hold out selected combinations of
+intervention type, timing, and room transition to evaluate compositional
+generalization. No scene geometry or human-authored paraphrase is shared
+between train and unseen test sets.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Split} & \textbf{Scenes} & \textbf{Base eps.} &
+\textbf{Branches} & \textbf{Utterances}\\
+\midrule
+Train & \tbd{N} & \tbd{N} & \tbd{N} & \tbd{N}\\
+Val-Seen & \tbd{N} & \tbd{N} & \tbd{N} & \tbd{N}\\
+Val-Unseen & \tbd{N} & \tbd{N} & \tbd{N} & \tbd{N}\\
+Test-Unseen & \tbd{N} & \tbd{N} & \tbd{N} & \tbd{N}\\
+\bottomrule
+\end{tabular}
+\caption{Planned benchmark statistics. Replace placeholders after generation
+and quality control.}
+\label{tab:data}
+\end{table}
+
+\subsection{Metrics}
+
+We report standard navigation success rate (SR), success weighted by path
+length (SPL), and navigation error. Interaction is measured by:
+\begin{align}
+  \mathrm{RecoveryRate}&=
+  \frac{N_{\mathrm{failed\ without\ interaction,\ succeeded\ with\ interaction}}}
+       {N_{\mathrm{recoverable\ episodes}}},\\
+  \mathrm{AskPrecision}&=
+  \frac{N_{\mathrm{useful\ questions}}}{N_{\mathrm{all\ questions}}},\\
+  \mathrm{AskRecall}&=
+  \frac{N_{\mathrm{help\ needed\ and\ requested}}}
+       {N_{\mathrm{help\ needed}}},\\
+  \mathrm{UpdateConsistency}&=
+  \frac{N_{\mathrm{actions\ consistent\ with\ latest\ task}}}
+       {N_{\mathrm{post\text{-}message\ actions}}}.
+\end{align}
+We also report question count, human intervention count, response delay,
+distance traveled after obsolete goals, constraint violations, and success
+gain per human message. A combined score is provided only as a secondary
+summary because its cost weights reflect deployment preferences.
+
+\section{A Mixed-Initiative Baseline}
+\label{sec:method}
+
+Our baseline contains four modules.
+
+\paragraph{Visual-spatial memory.}
+An RGB-D encoder produces observation features that are accumulated in a
+topological or metric memory $M_t^{\mathrm{map}}$. This memory records visited
+locations, visual landmarks, and traversability evidence.
+
+\paragraph{Dynamic task memory.}
+A language encoder maps each new message to a semantic update over $B_t$.
+The update module predicts the affected fields and whether prior goals or
+constraints are superseded. The resulting memory preserves both the current
+task and an auditable change history.
+
+\paragraph{Initiative manager.}
+The manager estimates uncertainty $U_t$, expected failure risk $F_t$, and the
+expected value of a question $V_t^{\mathrm{ask}}$. It asks only if
+\begin{equation}
+  V_t^{\mathrm{ask}}>C_{\mathrm{ask}}+C_{\mathrm{delay}},
+\end{equation}
+otherwise it navigates or waits. During human unavailability, it may continue
+with a conservative action, pause at a safe location, or postpone the
+question.
+
+\paragraph{Navigator.}
+A policy conditions on the current observation, spatial memory, task state,
+and interaction status:
+\begin{equation}
+  \pi(a_t\mid o_t,M_t^{\mathrm{map}},B_t,H_t).
+\end{equation}
+Training combines imitation learning on expert branches with reinforcement
+learning or offline preference optimization for communication cost.
+The total loss is
+\begin{equation}
+  \mathcal{L}=\mathcal{L}_{\mathrm{nav}}
+  +\alpha\mathcal{L}_{\mathrm{update}}
+  +\beta\mathcal{L}_{\mathrm{ask}}
+  +\gamma\mathcal{L}_{\mathrm{consistency}}.
+\end{equation}
+
+\section{Experiments}
+\label{sec:experiments}
+
+\subsection{Research Questions}
+
+We organize experiments around five questions:
+\begin{enumerate}[leftmargin=1.6em]
+  \item Does mid-execution language improve task success and recovery?
+  \item Can an agent identify when asking is more valuable than acting?
+  \item How do human- and robot-initiated interactions complement each other?
+  \item How sensitive are agents to intervention timing and delayed responses?
+  \item Does structured task memory improve adaptation over dialogue
+  concatenation?
+\end{enumerate}
+
+\subsection{Baselines}
+
+\begin{itemize}[leftmargin=1.4em]
+  \item \textbf{No-Interaction VLN:} ignores all post-instruction messages.
+  \item \textbf{Dialogue Concatenation:} appends messages to the original
+  instruction and replans without explicit task-state updates.
+  \item \textbf{Always Ask:} requests help at every candidate ambiguity.
+  \item \textbf{Threshold Ask:} asks when navigation entropy exceeds a tuned
+  threshold.
+  \item \textbf{Oracle Initiative:} receives oracle intervention timing or
+  answers, providing an upper bound.
+  \item \textbf{\method Baseline:} uses dynamic task memory and the learned
+  initiative manager described in \cref{sec:method}.
+\end{itemize}
+
+\subsection{Implementation Details}
+
+\tbd{Specify image encoder, language encoder, map representation, training
+schedule, hardware, random seeds, and all cost coefficients.} We will report
+mean and 95\% confidence intervals over at least three seeds. Counterfactual
+branches will be evaluated with paired bootstrap tests. Model selection will
+use validation-unseen data without access to test intervention paraphrases.
+
+\subsection{Main Results}
+
+\begin{table}[t]
+\centering
+\small
+\resizebox{\linewidth}{!}{
+\begin{tabular}{lrrrrrr}
+\toprule
+\textbf{Method} & \textbf{SR$\uparrow$} & \textbf{SPL$\uparrow$} &
+\textbf{Recovery$\uparrow$} & \textbf{Viol.$\downarrow$} &
+\textbf{Msgs.$\downarrow$} & \textbf{Utility$\uparrow$}\\
+\midrule
+No-Interaction VLN & TBD & TBD & TBD & TBD & 0 & TBD\\
+Dialogue Concatenation & TBD & TBD & TBD & TBD & TBD & TBD\\
+Always Ask & TBD & TBD & TBD & TBD & TBD & TBD\\
+Threshold Ask & TBD & TBD & TBD & TBD & TBD & TBD\\
+\method Baseline & TBD & TBD & TBD & TBD & TBD & TBD\\
+Oracle Initiative & TBD & TBD & TBD & TBD & TBD & TBD\\
+\bottomrule
+\end{tabular}}
+\caption{Main results on the test-unseen mixed-initiative track. No empirical
+values are claimed in this draft.}
+\label{tab:main}
+\end{table}
+
+\subsection{Initiative Direction and Timing}
+
+We compare HI, RI, and MI tracks under matched episode prefixes. The analysis
+will distinguish failures caused by navigation, task-state updating, question
+selection, and unavailable users. Timing experiments evaluate early, middle,
+and late interventions within each event window. We hypothesize that earlier
+intervention reduces wasted motion, while a small amount of additional visual
+evidence can make some later interventions easier to ground; this hypothesis
+must be tested rather than assumed.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Condition} & \textbf{SR} & \textbf{Recovery} &
+\textbf{Extra Dist.} & \textbf{Human Cost}\\
+\midrule
+HI only & TBD & TBD & TBD & TBD\\
+RI only & TBD & TBD & TBD & TBD\\
+MI & TBD & TBD & TBD & TBD\\
+MI + delayed user & TBD & TBD & TBD & TBD\\
+MI + intermittent user & TBD & TBD & TBD & TBD\\
+\bottomrule
+\end{tabular}
+\caption{Planned comparison of initiative and availability conditions.}
+\label{tab:initiative}
+\end{table}
+
+\subsection{Ablations and Human Evaluation}
+
+We ablate structured task memory, interaction history, availability modeling,
+counterfactual training, and the communication-cost term. A human evaluation
+will measure whether questions are timely and answerable, whether interventions
+are correctly reflected in subsequent behavior, perceived workload, and trust.
+Annotators will view paired rollouts with randomized method identity.
+
+\section{Limitations and Broader Impact}
+\label{sec:limitations}
+
+Simulation cannot fully reproduce household noise, social expectations, sensor
+failure, or the consequences of unsafe motion. The initial benchmark uses
+short-horizon navigation actions and text interaction; speech recognition,
+gesture, manipulation, and multi-person authority are outside its first scope.
+Human messages may also encode cultural or household-specific assumptions.
+Models trained on synthetic or templated language risk learning annotation
+artifacts.
+
+Mixed-initiative systems can reduce supervision burden, but poorly calibrated
+asking may annoy users, and incorrect compliance with an intervention may
+create safety risks. Benchmark success must therefore not be interpreted as
+certification for deployment. Real-world testing should use conservative
+motion limits, accessible stop controls, privacy-preserving data collection,
+and explicit rules for resolving conflicting instructions.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented \method, a benchmark proposal for household VLN in which either
+the robot or the human may initiate interaction. The formulation preserves
+continuous navigation state, supports asynchronous human availability, and
+represents language as updates to a dynamic task specification. The benchmark
+combines controlled intervention windows, counterfactual branches, and metrics
+that expose the trade-off between autonomy and human effort. The proposed
+baseline and experiments provide a concrete path toward evaluating robots that
+know when to ask and remain correctable whenever people choose to intervene.
+
+\appendix
+
+\section{Illustrative Episode Record}
+\label{app:schema}
+
+\begin{verbatim}
+{
+  "episode_id": "hssd_0123",
+  "scene_id": "scene_x",
+  "initial_instruction": "Go to the table in the living room.",
+  "event": {
+    "type": "reference_repair",
+    "window": [24, 31],
+    "trigger_step": 27,
+    "message": "I meant the small table beside the sofa."
+  },
+  "availability": {
+    "mode": "intermittent",
+    "response_delay_steps": 4
+  },
+  "task_update": {
+    "replace_goal_reference": "small_table_near_sofa"
+  },
+  "branches": [
+    "no_intervention",
+    "human_intervention",
+    "oracle_intervention"
+  ]
+}
+\end{verbatim}
+
+\section{Additional Interaction Examples}
+
+\paragraph{Human-initiated correction.}
+The robot approaches the right-hand corridor. The user says, ``That route is
+blocked; use the corridor behind you.'' The correct behavior is to update the
+route constraint, preserve the destination, and replan from the current pose.
+
+\paragraph{Robot-initiated clarification.}
+At two visually similar doors, the robot asks, ``Do you mean the bedroom beside
+the bathroom or the one at the end of the hall?'' If no answer arrives, the
+agent must follow the configured conservative policy rather than assuming
+continuous supervision.
+
+\paragraph{Mixed initiative.}
+The robot asks about an ambiguous destination. Before answering that question,
+the user replaces the task: ``Never mind; return to the living room.'' The
+system should invalidate the pending question and prioritize the new goal.
+
+\section{Planned Release}
+
+The intended release includes episode-generation code, simulator
+configurations, state snapshots for counterfactual replay, train/validation/test
+metadata, annotation guidelines, validated utterances, baseline models,
+evaluation scripts, and model cards describing known limitations.
+
+\begin{thebibliography}{99}
+
+\bibitem{anderson2018r2r}
+P. Anderson, Q. Wu, D. Teney, J. Bruce, M. Johnson, N. Sunderhauf,
+I. Reid, S. Gould, and A. van den Hengel.
+\newblock Vision-and-language navigation: Interpreting visually-grounded
+navigation instructions in real environments.
+\newblock In \emph{CVPR}, 2018.
+
+\bibitem{beer2014levels}
+J. M. Beer, A. D. Fisk, and W. A. Rogers.
+\newblock Toward a framework for levels of robot autonomy in human-robot
+interaction.
+\newblock \emph{Journal of Human-Robot Interaction}, 2014.
+
+\bibitem{broad2017language}
+A. Broad, J. Murphey, and B. Argall.
+\newblock Learning models for shared control of human-machine systems with
+unknown dynamics.
+\newblock \emph{Robotics: Science and Systems workshop}, 2017.
+
+\bibitem{cui2023lilac}
+Y. Cui, P. Karamcheti, A. Pal, N. Shivakumar, P. Liang, and D. Sadigh.
+\newblock No, to the right: Online language corrections for robotic
+manipulation via shared autonomy.
+\newblock In \emph{HRI}, 2023.
+
+\bibitem{khanna2024hssd}
+M. Khanna et al.
+\newblock HSSD: Habitat synthetic scenes dataset.
+\newblock In \emph{CVPR}, 2024.
+
+\bibitem{krantz2020beyond}
+J. Krantz, E. Wijmans, A. Majumdar, D. Batra, and S. Lee.
+\newblock Beyond the nav-graph: Vision-and-language navigation in continuous
+environments.
+\newblock In \emph{ECCV}, 2020.
+
+\bibitem{krantz2023iterative}
+J. Krantz, S. Banerjee, W. Zhu, J. Corso, P. Anderson, S. Lee, and J. Thomason.
+\newblock Iterative vision-and-language navigation.
+\newblock In \emph{CVPR}, 2023.
+
+\bibitem{ku2020rxr}
+A. Ku et al.
+\newblock Room-across-room: Multilingual vision-and-language navigation with
+dense spatiotemporal grounding.
+\newblock In \emph{EMNLP}, 2020.
+
+\bibitem{nguyen2019hanna}
+K. Nguyen and H. Daume III.
+\newblock Help, Anna! Visual navigation with natural multimodal assistance via
+retrospective curiosity-encouraging imitation learning.
+\newblock In \emph{EMNLP-IJCNLP}, 2019.
+
+\bibitem{puig2024habitat3}
+X. Puig et al.
+\newblock Habitat 3.0: A co-habitat for humans, avatars and robots.
+\newblock In \emph{ICLR}, 2024.
+
+\bibitem{savva2019habitat}
+M. Savva et al.
+\newblock Habitat: A platform for embodied AI research.
+\newblock In \emph{ICCV}, 2019.
+
+\bibitem{sharma2022correcting}
+P. Sharma, A. Torralba, and J. Andreas.
+\newblock Skill induction and planning with latent language.
+\newblock In \emph{ACL}, 2022.
+
+\bibitem{taioli2025collaborative}
+F. Taioli et al.
+\newblock Collaborative object navigation using dialogue.
+\newblock In \emph{ICCV}, 2025.
+
+\bibitem{thomason2020cvdn}
+J. Thomason, M. Murray, M. Cakmak, and L. Zettlemoyer.
+\newblock Vision-and-dialog navigation.
+\newblock In \emph{Conference on Robot Learning}, 2020.
+
+\bibitem{zhu2020cmn}
+Y. Zhu, F. Zhu, Z. Zhan, B. Lin, J. Jiao, X. Chang, and X. Liang.
+\newblock Vision-dialog navigation by exploring cross-modal memory.
+\newblock In \emph{CVPR}, 2020.
+
+\bibitem{zhu2021scoa}
+Y. Zhu et al.
+\newblock Self-motivated communication agent for real-world vision-dialog
+navigation.
+\newblock In \emph{ICCV}, 2021.
+
+\end{thebibliography}
+
+\end{document}
