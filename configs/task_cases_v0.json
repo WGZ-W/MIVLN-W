@@ -1,0 +1,101 @@
+{
+  "version": "0.1",
+  "cases": [
+    {
+      "episode_id": "case_001",
+      "initial_instruction": "Go to the kitchen.",
+      "initial_goal": "kitchen",
+      "max_steps": 20,
+      "events": [
+        {
+          "event_id": "replace_kitchen_with_study",
+          "trigger": {
+            "type": "step",
+            "value": 5
+          },
+          "utterance": "Instead of the kitchen, go to the study.",
+          "task_update": {
+            "operation": "replace_goal",
+            "old_goal": "kitchen",
+            "new_goal": "study"
+          }
+        }
+      ],
+      "expected_final_goal": "study"
+    },
+    {
+      "episode_id": "case_002",
+      "initial_instruction": "Go to the bedroom.",
+      "initial_goal": "bedroom",
+      "max_steps": 20,
+      "events": [
+        {
+          "event_id": "replace_bedroom_with_living_room",
+          "trigger": {
+            "type": "step",
+            "value": 5
+          },
+          "utterance": "Instead of the bedroom, go to the living room.",
+          "task_update": {
+            "operation": "replace_goal",
+            "old_goal": "bedroom",
+            "new_goal": "living_room"
+          }
+        }
+      ],
+      "expected_final_goal": "living_room"
+    },
+    {
+      "episode_id": "case_003",
+      "initial_instruction": "Go to the refrigerator and stop beside it.",
+      "initial_goal": "near_refrigerator",
+      "max_steps": 20,
+      "events": [
+        {
+          "event_id": "replace_refrigerator_with_sofa",
+          "trigger": {
+            "type": "step",
+            "value": 5
+          },
+          "utterance": "Instead of stopping beside the refrigerator, go to the sofa and stop beside it.",
+          "task_update": {
+            "operation": "replace_goal",
+            "old_goal": "near_refrigerator",
+            "new_goal": "near_sofa"
+          }
+        }
+      ],
+      "expected_final_goal": "near_sofa"
+    },
+    {
+      "episode_id": "case_004",
+      "initial_instruction": "Go to the kitchen.",
+      "initial_goal": "kitchen",
+      "max_steps": 20,
+      "events": [
+        {
+          "event_id": "replace_kitchen_with_study_late",
+          "trigger": {
+            "type": "step",
+            "value": 15
+          },
+          "utterance": "Instead of the kitchen, go to the study.",
+          "task_update": {
+            "operation": "replace_goal",
+            "old_goal": "kitchen",
+            "new_goal": "study"
+          }
+        }
+      ],
+      "expected_final_goal": "study"
+    },
+    {
+      "episode_id": "case_005",
+      "initial_instruction": "Go to the kitchen.",
+      "initial_goal": "kitchen",
+      "max_steps": 20,
+      "events": [],
+      "expected_final_goal": "kitchen"
+    }
+  ]
+}
