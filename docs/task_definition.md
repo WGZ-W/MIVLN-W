@@ -22,7 +22,9 @@ The first simulator-backed version will use:
 - `TURN_RIGHT` by 15 degrees;
 - `STOP`.
 
-The current scaffold abstracts away these low-level actions and records the intended goal at every step.
+The text demo abstracts away these low-level actions. The Habitat runner executes
+movement and turn actions, preserves the robot state across interventions, and
+records the active goal and measured pose at every step.
 
 ## Supported intervention
 
@@ -54,6 +56,15 @@ An episode succeeds when all of the following hold:
 3. The episode remains within the maximum step limit.
 
 Stopping at a cancelled goal, timing out, or failing to stop is a failure.
+
+In the Habitat integration, STOP is grounded in the measured geodesic distance
+from the final pose to each configured goal. A policy's intended-goal label alone
+cannot establish success. The default success radius is 0.3 meters.
+
+The first paired simulator experiment uses an Oracle controller that deliberately
+reads privileged goal positions and structured task updates. It validates task
+semantics and navigation plumbing; it does not implement the language-only agent
+interface described above. See `docs/intervention_001.md` for this experiment.
 
 ## Initial metrics
 

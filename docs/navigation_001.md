@@ -87,6 +87,6 @@ python -m scripts.export_video --episode-dir outputs/navigation_001 \
 
 ## 后续边界
 
-正式安装 MIVLN 包仍要求 Python >=3.10；本脚本可独立运行于当前 Python 3.9
-的 `habitat` 环境。把任务状态和介入引擎接入仿真之前，需要统一 Python 版本。
+当前 MIVLN 包和仿真脚本均支持 Python >=3.9，可以共用现有 `habitat` 环境。
+单次目标替换与无介入配对实验见 [intervention_001.md](intervention_001.md)。
 固定坐标测试通过后，再为 HSSD 场景设置有明确语义的房间或物体目标。

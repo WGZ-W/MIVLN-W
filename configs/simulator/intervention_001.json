@@ -1,0 +1,31 @@
+{
+  "episode_id": "intervention_001",
+  "scene": "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb",
+  "initial_instruction": "Go to point A.",
+  "initial_goal": "point_a",
+  "start_position": [-4.031449317932129, 0.1511041820049286, 11.148603439331055],
+  "start_rotation_xyzw": [0.0, 0.0, 0.0, 1.0],
+  "goal_positions": {
+    "point_a": [5.338349342346191, 0.20891280472278595, 7.16834831237793],
+    "point_b": [-4.031449317932129, 0.1511041820049286, 11.148603439331055]
+  },
+  "events": [
+    {
+      "event_id": "return_to_start",
+      "trigger": {"type": "step", "value": 20},
+      "utterance": "Cancel going to point A. Return to the starting point B.",
+      "task_update": {
+        "operation": "replace_goal",
+        "old_goal": "point_a",
+        "new_goal": "point_b"
+      }
+    }
+  ],
+  "success_radius_m": 0.3,
+  "max_steps": 500,
+  "seed": 42,
+  "resolution": [256, 256],
+  "sensor_height": 1.5,
+  "forward_step_m": 0.25,
+  "turn_angle_degrees": 15.0
+}

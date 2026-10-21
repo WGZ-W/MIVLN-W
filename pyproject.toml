@@ -7,7 +7,7 @@ name = "mivln"
 version = "0.1.0"
 description = "Minimal mixed-initiative vision-and-language navigation research scaffold"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.9"
 dependencies = []
 
 [tool.setuptools.packages.find]

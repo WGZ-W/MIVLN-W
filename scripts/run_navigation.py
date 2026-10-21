@@ -1,4 +1,4 @@
-"""Run one fixed, intervention-free Oracle navigation episode on Habitat-Sim."""
+"""Run an Oracle navigation episode with optional target-replacement events."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ import numpy as np
 from PIL import Image
 from habitat_sim.utils.common import quat_from_coeffs
 
+from mivln import EpisodeEvaluator, EventEngine, InterventionEvent, TaskState
 from scripts.check_habitat import PROJECT_ROOT, pose, write_json
 from scripts.export_video import export_video, find_ffmpeg
 
@@ -73,23 +74,63 @@ def shortest_path(pathfinder, start: np.ndarray, goal: np.ndarray):
     return path
 
 
+def configured_goals(config: dict) -> dict:
+    goals = config.get("goal_positions")
+    if goals is None:
+        goals = {config["initial_goal"]: config["goal_position"]}
+    if not isinstance(goals, dict) or not goals:
+        raise ValueError("goal_positions must be a non-empty goal-to-position mapping")
+    if any(not isinstance(goal, str) or not goal.strip() for goal in goals):
+        raise ValueError("Goal identifiers must be non-empty strings")
+    if config["initial_goal"] not in goals:
+        raise ValueError("initial_goal must have a configured position")
+    return goals
+
+
 def validate_config(config: dict) -> None:
-    if not isinstance(config["max_steps"], int) or config["max_steps"] < 1:
+    if type(config["max_steps"]) is not int or config["max_steps"] < 1:
         raise ValueError("max_steps must be a positive integer")
     for name in ("success_radius_m", "forward_step_m", "turn_angle_degrees", "sensor_height"):
         if not np.isfinite(config[name]) or config[name] <= 0:
             raise ValueError(f"{name} must be finite and positive")
-    for name in ("start_position", "goal_position"):
-        value = np.asarray(config[name], dtype=float)
+    goals = configured_goals(config)
+    for name, position in [("start_position", config["start_position"]), *goals.items()]:
+        value = np.asarray(position, dtype=float)
         if value.shape != (3,) or not np.isfinite(value).all():
             raise ValueError(f"{name} must contain three finite coordinates")
     rotation = np.asarray(config["start_rotation_xyzw"], dtype=float)
     if rotation.shape != (4,) or not np.isfinite(rotation).all() or not np.isclose(np.linalg.norm(rotation), 1.0):
         raise ValueError("start_rotation_xyzw must be a unit quaternion in x,y,z,w order")
+    events = config.get("events", [])
+    if not isinstance(events, list) or len(events) > 1:
+        raise ValueError("Version 0.1 supports zero or one intervention")
+    state = TaskState(active_goal=config["initial_goal"])
+    for value in events:
+        event = InterventionEvent.from_dict(value)
+        if type(event.trigger_step) is not int or event.trigger_step >= config["max_steps"]:
+            raise ValueError("Event trigger must be an integer within the action budget")
+        old_goal = state.active_goal
+        state.apply_update(event.task_update)
+        if state.active_goal not in goals or state.active_goal == old_goal:
+            raise ValueError("Intervention must select a different, configured goal")
+
+
+def path_record(path, start, goal, goal_id: str, step=None) -> dict:
+    return {
+        "step": step, "goal_id": goal_id,
+        "start": np.asarray(start).tolist(), "goal": np.asarray(goal).tolist(),
+        "distance_m": float(path.geodesic_distance),
+        "points": [np.asarray(point).tolist() for point in path.points],
+    }
 
 
 def run(config: dict, scene: Path, gpu_id: int, output: Path) -> dict:
     validate_config(config)
+    goals = {goal: np.asarray(position, dtype=np.float32)
+             for goal, position in configured_goals(config).items()}
+    events = [InterventionEvent.from_dict(value) for value in config.get("events", [])]
+    task_state = TaskState(active_goal=config["initial_goal"])
+    event_engine = EventEngine(events)
     if not scene.is_file():
         raise FileNotFoundError(f"Scene not found: {scene}")
     # Keep each run's frames and metrics together; never mix them with an older run.
@@ -104,18 +145,22 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path) -> dict:
             raise RuntimeError("The scene requires a loaded navigation mesh")
         sim.pathfinder.seed(config["seed"])
         start = np.asarray(config["start_position"], dtype=np.float32)
-        goal = np.asarray(config["goal_position"], dtype=np.float32)
-        if not sim.pathfinder.is_navigable(start) or not sim.pathfinder.is_navigable(goal):
+        goal = goals[task_state.active_goal]
+        if not sim.pathfinder.is_navigable(start):
             raise ValueError("The configured start and goal must be navigable in this scene")
+        for goal_id, position in goals.items():
+            if not sim.pathfinder.is_navigable(position) or shortest_path(sim.pathfinder, start, position) is None:
+                raise ValueError(f"Goal is not navigable and reachable from the start: {goal_id}")
+        for event in events:
+            replacement = goals[event.task_update["new_goal"]]
+            separation = shortest_path(sim.pathfinder, goal, replacement)
+            if separation is None or separation.geodesic_distance <= 2 * config["success_radius_m"]:
+                raise ValueError("Old and new goals must have separate, reachable success regions")
         oracle = shortest_path(sim.pathfinder, start, goal)
         if oracle is None or oracle.geodesic_distance <= config["success_radius_m"]:
             raise ValueError("Start and goal must be connected and outside the success radius")
         optimal_length = float(oracle.geodesic_distance)
-        write_json(output / "oracle_path.json", {
-            "start": start.tolist(), "goal": goal.tolist(),
-            "distance_m": optimal_length,
-            "points": [np.asarray(point).tolist() for point in oracle.points],
-        })
+        write_json(output / "oracle_path.json", path_record(oracle, start, goal, task_state.active_goal))
 
         state = habitat_sim.AgentState()
         state.position = start
@@ -126,7 +171,8 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path) -> dict:
         )
         episode = {
             **config, "scene": str(scene), "gpu_device_id": gpu_id,
-            "controller": "oracle_greedy_geodesic_follower", "events": [],
+            "controller": "oracle_dynamic_planner" if events else "oracle_greedy_geodesic_follower",
+            "events": [event.to_dict() for event in events],
             "shortest_path_length_m": optimal_length,
             "versions": {"python": platform.python_version(),
                          "habitat_sim": habitat_sim.__version__, "numpy": np.__version__},
@@ -136,6 +182,8 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path) -> dict:
         trajectory = [{
             "step": None, "action": "INITIALIZE", **pose(agent), "collided": False,
             "distance_m": 0.0, "distance_to_goal_m": optimal_length,
+            "active_goal": task_state.active_goal, "task_state": task_state.to_dict(),
+            "delivered_event_ids": [],
             "frames": save_frame(output, 0, observations),
         }]
         path_length = 0.0
@@ -144,7 +192,38 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path) -> dict:
         termination = "timeout"
         planner_error = None
         final_distance = optimal_length
+        event_log = []
+        replans = []
+        intervention_step = None
+        first_compliant_action_step = None
+        post_intervention_optimal_length = None
+        pre_intervention_path_length = None
         for step in range(config["max_steps"]):
+            # Events update task state between actions. The simulator and agent
+            # stay alive; recreating a follower clears only its planner state.
+            before_pose = pose(agent)
+            before_task = task_state.to_dict()
+            delivered = event_engine.step(step, task_state)
+            if delivered:
+                intervention_step = step
+                goal = goals[task_state.active_goal]
+                for event in delivered:
+                    event_log.append({
+                        **event.to_dict(), "delivered_step": step,
+                        "pose_before": before_pose, "pose_after": pose(agent),
+                        "task_state_before": before_task, "task_state_after": task_state.to_dict(),
+                    })
+                updated_path = shortest_path(sim.pathfinder, agent.get_state().position, goal)
+                if updated_path is None:
+                    termination = "updated_goal_unreachable"
+                    break
+                replans.append(path_record(updated_path, agent.get_state().position, goal,
+                                           task_state.active_goal, step))
+                post_intervention_optimal_length = float(updated_path.geodesic_distance)
+                pre_intervention_path_length = path_length
+                follower = habitat_sim.nav.GreedyGeodesicFollower(
+                    sim.pathfinder, agent, goal_radius=config["success_radius_m"], stop_key="STOP"
+                )
             previous_position = agent.get_state().position.copy()
             try:
                 action = follower.next_action_along(goal)
@@ -152,6 +231,10 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path) -> dict:
                 termination = "planner_error"
                 planner_error = str(error) or type(error).__name__
                 break
+            # This is the Oracle's first action planned for the updated target;
+            # it measures planner compliance, not learned language understanding.
+            if intervention_step is not None and first_compliant_action_step is None:
+                first_compliant_action_step = step
             # Habitat-Sim has movement actions only. STOP terminates this episode
             # without moving the agent, and is counted as one action in the budget.
             if action == "STOP":
@@ -169,27 +252,59 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path) -> dict:
             trajectory.append({
                 "step": step, "action": action, **pose(agent), "collided": collided,
                 "distance_m": distance, "distance_to_goal_m": final_distance,
+                "active_goal": task_state.active_goal, "task_state": task_state.to_dict(),
+                "delivered_event_ids": [event.event_id for event in delivered],
                 "frames": save_frame(output, step + 1, observations),
             })
             if stopped:
                 termination = "stopped"
                 break
 
-        success = stopped and final_distance is not None and final_distance <= config["success_radius_m"]
+        distances = {}
+        for goal_id, position in goals.items():
+            remaining = shortest_path(sim.pathfinder, agent.get_state().position, position)
+            distances[goal_id] = float(remaining.geodesic_distance) if remaining is not None else None
+        final_distance = distances[task_state.active_goal]
+        evaluated = EpisodeEvaluator().evaluate_navigation(
+            task_state=task_state, stopped=stopped, goal_distances_m=distances,
+            success_radius_m=config["success_radius_m"], intervention_step=intervention_step,
+            first_compliant_action_step=first_compliant_action_step,
+            path_length=path_length, steps=len(trajectory) - 1, max_steps=config["max_steps"],
+        )
+        success = evaluated.dynamic_success
         if stopped and not success:
             termination = "stopped_outside_goal"
+        post_spl = None
+        post_length = None
+        if post_intervention_optimal_length is not None:
+            post_length = path_length - pre_intervention_path_length
+            denominator = max(post_intervention_optimal_length, post_length)
+            post_spl = (float(success) * post_intervention_optimal_length / denominator
+                        if denominator > 0 else float(success))
         metrics = {
+            **evaluated.to_dict(),
             "episode_id": config["episode_id"], "success": bool(success),
             "success_rate": float(success),
-            "spl": float(success) * optimal_length / max(optimal_length, path_length),
+            # Ordinary SPL is meaningful only for the fixed-goal control.
+            "spl": None if events else float(success) * optimal_length / max(optimal_length, path_length),
+            "post_intervention_spl": post_spl,
+            "post_intervention_path_length_m": post_length,
+            "post_intervention_shortest_path_length_m": post_intervention_optimal_length,
             "stopped": stopped, "termination": termination,
             "steps": len(trajectory) - 1, "max_steps": config["max_steps"],
             "path_length_m": path_length, "shortest_path_length_m": optimal_length,
             "navigation_error_m": final_distance,
             "success_radius_m": config["success_radius_m"],
             "collision_count": collision_count, "planner_error": planner_error,
+            "goal_distances_m": distances,
+            "intervention_step": intervention_step,
+            "first_compliant_action_step": first_compliant_action_step,
+            "scheduled_event_count": len(events), "delivered_event_count": len(event_log),
         }
         write_json(output / "trajectory.json", trajectory)
+        write_json(output / "events.json", event_log)
+        write_json(output / "replans.json", replans)
+        write_json(output / "final_task_state.json", task_state.to_dict())
         write_json(output / "metrics.json", metrics)
         return metrics
 

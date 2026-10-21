@@ -2,7 +2,7 @@
 
 MIVLN is a minimal research scaffold for **mixed-initiative vision-and-language navigation**. It focuses first on the task logic needed when a robot is navigating autonomously and a human changes the task during execution.
 
-The current milestone is deliberately simulator-independent:
+The core task logic is simulator-independent, with optional Habitat-Sim navigation experiments:
 
 ```text
 Go to the kitchen
@@ -20,13 +20,14 @@ update task state → stop at bedroom → evaluate success
 - `EventEngine`: deterministic delivery of intervention events.
 - `Evaluator`: metrics for the final active goal and intervention response.
 - `scripts/run_demo.py`: a complete target-replacement example.
+- `scripts/run_intervention.py`: matched Habitat control/target-replacement branches and automatic validation.
 - `tests/`: dependency-free unit tests for the core logic.
 
 Habitat is intentionally not required yet. The core task semantics can therefore be tested on Windows before connecting them to a Linux simulator.
 
 ## Quick start
 
-Python 3.10 or newer is recommended.
+Python 3.9 or newer is supported, including the existing Python 3.9 Habitat environment.
 
 ```powershell
 python -m unittest discover -s tests -v
@@ -51,7 +52,7 @@ These cases define task semantics. `scripts/run_demo.py` continues to read only 
 In the separate `habitat` environment, run a fixed navigation episode with the Oracle shortest-path follower:
 
 ```bash
-python -m scripts.run_navigation --gpu-id 7
+python -m scripts.run_navigation --gpu-id 0
 ```
 
 The configuration is [`configs/simulator/navigation_001.json`](configs/simulator/navigation_001.json).
@@ -64,7 +65,47 @@ python -m scripts.export_video --episode-dir outputs/navigation_001
 ```
 
 See [`docs/navigation_001.md`](docs/navigation_001.md) for setup and acceptance criteria.
-This simulator check supports the existing Python 3.9 Habitat environment independently of the MIVLN package.
+Both the simulator scripts and the MIVLN core support the existing Python 3.9 Habitat environment.
+
+## Target replacement in Habitat
+
+Run matched control and intervention branches in the configured `habitat` environment:
+
+```bash
+python -m scripts.run_intervention --gpu-id 0 --no-video
+```
+
+Both branches initially navigate to point A. Before action 20, the intervention branch
+receives a structured goal replacement and returns to the starting point B without
+resetting the simulator. Results are saved under `outputs/intervention_001/`.
+`pair_summary.json` must report `passed: true`; STOP success uses measured geodesic distance.
+This is an Oracle integration check with privileged goal coordinates and task updates,
+not a learned language-following agent. See [`docs/intervention_001.md`](docs/intervention_001.md)
+for commands, video export, output definitions, and acceptance criteria.
+
+After this pair passes, compare early/middle/late interventions toward a shared
+independent target B. The preparation step samples and validates B using only the
+navigation mesh, then saves all three configurations:
+
+```bash
+python -m scripts.intervention_timing prepare --output-dir outputs/intervention_timing_001
+python -m scripts.intervention_timing run --output-dir outputs/intervention_timing_001 --gpu-id 0 --no-video
+```
+
+See [`docs/intervention_timing.md`](docs/intervention_timing.md) for trigger definitions,
+summary metrics, video export, and repeat runs.
+
+For a small collection of different start/A/B combinations, prepare 10 fixed tasks
+and run the reference plus three paired intervention timings for each task:
+
+```bash
+python -m scripts.debug_dataset prepare --count 10 --output-dir outputs/debug_dataset_001
+python -m scripts.debug_dataset run --output-dir outputs/debug_dataset_001 --gpu-id 0
+python -m scripts.debug_dataset summarize --output-dir outputs/debug_dataset_001
+```
+
+Failed tasks remain in the reports. See [`docs/debug_dataset.md`](docs/debug_dataset.md)
+for geometry filters, logs, video review, and reproduction commands.
 
 ## Project layout
 

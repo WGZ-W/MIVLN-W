@@ -2,6 +2,10 @@
 
 整理日期：2026-10-21。适用目标：Linux x86_64、NVIDIA GPU、Bash、Miniconda。
 
+后续代码已验证支持 Python >=3.9，任务逻辑与仿真可以共用 Python 3.9 的
+`habitat` 环境。单次目标替换与对照实验见 [intervention_001.md](intervention_001.md)。
+本文中的双环境安装过程保留为原机器复现记录。
+
 本文根据本次操作记录、Conda 安装历史、现有脚本和实际运行结果整理。
 包含已执行的主要安装和运行命令，以及迁移时补充的源码传输、FFmpeg 安装和环境归档命令。
 它是一份按执行顺序排列的操作手册，不是完整的终端历史，也不需要整篇一次性执行。
@@ -200,7 +204,7 @@ conda list habitat-sim
 
 预期 Habitat-Sim 为 0.3.3，NumPy 为 1.26.4。
 当前仅验证独立的 Habitat-Sim 脚本，没有安装 Habitat-Lab、HSSD 或训练框架。
-MIVLN 包本身声明 Python >=3.10，因此正式整合任务状态模块与仿真前还需要统一 Python 版本。
+MIVLN 包的 Python 要求现已调整为 >=3.9，并通过核心与仿真循环测试，可直接接入现有环境。
 
 ## 7. 下载官方测试场景（已执行）
 
