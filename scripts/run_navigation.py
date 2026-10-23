@@ -124,12 +124,18 @@ def path_record(path, start, goal, goal_id: str, step=None) -> dict:
     }
 
 
-def run(config: dict, scene: Path, gpu_id: int, output: Path) -> dict:
+def run(config: dict, scene: Path, gpu_id: int, output: Path,
+        intervention_policy: str = "follow") -> dict:
+    if intervention_policy not in ("follow", "ignore"):
+        raise ValueError("intervention_policy must be 'follow' or 'ignore'")
     validate_config(config)
     goals = {goal: np.asarray(position, dtype=np.float32)
              for goal, position in configured_goals(config).items()}
     events = [InterventionEvent.from_dict(value) for value in config.get("events", [])]
     task_state = TaskState(active_goal=config["initial_goal"])
+    # Evaluator truth and the policy's belief are separate objects. Only the
+    # evaluator is unconditionally updated by delivered intervention events.
+    policy_state = TaskState(active_goal=config["initial_goal"])
     event_engine = EventEngine(events)
     if not scene.is_file():
         raise FileNotFoundError(f"Scene not found: {scene}")
@@ -145,7 +151,7 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path) -> dict:
             raise RuntimeError("The scene requires a loaded navigation mesh")
         sim.pathfinder.seed(config["seed"])
         start = np.asarray(config["start_position"], dtype=np.float32)
-        goal = goals[task_state.active_goal]
+        goal = goals[policy_state.active_goal]
         if not sim.pathfinder.is_navigable(start):
             raise ValueError("The configured start and goal must be navigable in this scene")
         for goal_id, position in goals.items():
@@ -171,7 +177,9 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path) -> dict:
         )
         episode = {
             **config, "scene": str(scene), "gpu_device_id": gpu_id,
-            "controller": "oracle_dynamic_planner" if events else "oracle_greedy_geodesic_follower",
+            "controller": ("ignore_intervention_oracle" if intervention_policy == "ignore"
+                           else "oracle_dynamic_planner") if events else "oracle_greedy_geodesic_follower",
+            "intervention_policy": intervention_policy,
             "events": [event.to_dict() for event in events],
             "shortest_path_length_m": optimal_length,
             "versions": {"python": platform.python_version(),
@@ -183,6 +191,8 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path) -> dict:
             "step": None, "action": "INITIALIZE", **pose(agent), "collided": False,
             "distance_m": 0.0, "distance_to_goal_m": optimal_length,
             "active_goal": task_state.active_goal, "task_state": task_state.to_dict(),
+            "policy_goal": policy_state.active_goal, "policy_task_state": policy_state.to_dict(),
+            "distance_to_policy_goal_m": optimal_length,
             "delivered_event_ids": [],
             "frames": save_frame(output, 0, observations),
         }]
@@ -203,27 +213,36 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path) -> dict:
             # stay alive; recreating a follower clears only its planner state.
             before_pose = pose(agent)
             before_task = task_state.to_dict()
+            before_policy = policy_state.to_dict()
             delivered = event_engine.step(step, task_state)
             if delivered:
                 intervention_step = step
-                goal = goals[task_state.active_goal]
+                if intervention_policy == "follow":
+                    for event in delivered:
+                        policy_state.apply_update(event.task_update)
                 for event in delivered:
                     event_log.append({
                         **event.to_dict(), "delivered_step": step,
                         "pose_before": before_pose, "pose_after": pose(agent),
                         "task_state_before": before_task, "task_state_after": task_state.to_dict(),
+                        "policy_task_state_before": before_policy,
+                        "policy_task_state_after": policy_state.to_dict(),
+                        "ignored_by_policy": intervention_policy == "ignore",
                     })
-                updated_path = shortest_path(sim.pathfinder, agent.get_state().position, goal)
+                updated_path = shortest_path(sim.pathfinder, agent.get_state().position,
+                                             goals[task_state.active_goal])
                 if updated_path is None:
                     termination = "updated_goal_unreachable"
                     break
-                replans.append(path_record(updated_path, agent.get_state().position, goal,
-                                           task_state.active_goal, step))
                 post_intervention_optimal_length = float(updated_path.geodesic_distance)
                 pre_intervention_path_length = path_length
-                follower = habitat_sim.nav.GreedyGeodesicFollower(
-                    sim.pathfinder, agent, goal_radius=config["success_radius_m"], stop_key="STOP"
-                )
+                if intervention_policy == "follow":
+                    goal = goals[policy_state.active_goal]
+                    replans.append(path_record(updated_path, agent.get_state().position, goal,
+                                               policy_state.active_goal, step))
+                    follower = habitat_sim.nav.GreedyGeodesicFollower(
+                        sim.pathfinder, agent, goal_radius=config["success_radius_m"], stop_key="STOP"
+                    )
             previous_position = agent.get_state().position.copy()
             try:
                 action = follower.next_action_along(goal)
@@ -233,7 +252,8 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path) -> dict:
                 break
             # This is the Oracle's first action planned for the updated target;
             # it measures planner compliance, not learned language understanding.
-            if intervention_step is not None and first_compliant_action_step is None:
+            if (intervention_step is not None and first_compliant_action_step is None
+                    and policy_state.active_goal == task_state.active_goal):
                 first_compliant_action_step = step
             # Habitat-Sim has movement actions only. STOP terminates this episode
             # without moving the agent, and is counted as one action in the budget.
@@ -247,12 +267,17 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path) -> dict:
             distance = float(np.linalg.norm(position - previous_position))
             path_length += distance
             collision_count += int(collided)
-            remaining = shortest_path(sim.pathfinder, position, goal)
+            remaining = shortest_path(sim.pathfinder, position, goals[task_state.active_goal])
             final_distance = float(remaining.geodesic_distance) if remaining is not None else None
+            policy_remaining = (remaining if policy_state.active_goal == task_state.active_goal
+                                else shortest_path(sim.pathfinder, position, goal))
             trajectory.append({
                 "step": step, "action": action, **pose(agent), "collided": collided,
                 "distance_m": distance, "distance_to_goal_m": final_distance,
                 "active_goal": task_state.active_goal, "task_state": task_state.to_dict(),
+                "policy_goal": policy_state.active_goal, "policy_task_state": policy_state.to_dict(),
+                "distance_to_policy_goal_m": (float(policy_remaining.geodesic_distance)
+                                             if policy_remaining is not None else None),
                 "delivered_event_ids": [event.event_id for event in delivered],
                 "frames": save_frame(output, step + 1, observations),
             })
@@ -273,7 +298,8 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path) -> dict:
         )
         success = evaluated.dynamic_success
         if stopped and not success:
-            termination = "stopped_outside_goal"
+            termination = ("stopped_at_cancelled_goal" if evaluated.stopped_goal in task_state.cancelled_goals
+                           else "stopped_outside_goal")
         post_spl = None
         post_length = None
         if post_intervention_optimal_length is not None:
@@ -300,11 +326,14 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path) -> dict:
             "intervention_step": intervention_step,
             "first_compliant_action_step": first_compliant_action_step,
             "scheduled_event_count": len(events), "delivered_event_count": len(event_log),
+            "intervention_policy": intervention_policy, "policy_goal": policy_state.active_goal,
+            "ignored_event_count": len(event_log) if intervention_policy == "ignore" else 0,
         }
         write_json(output / "trajectory.json", trajectory)
         write_json(output / "events.json", event_log)
         write_json(output / "replans.json", replans)
         write_json(output / "final_task_state.json", task_state.to_dict())
+        write_json(output / "final_policy_state.json", policy_state.to_dict())
         write_json(output / "metrics.json", metrics)
         return metrics
 
@@ -316,6 +345,7 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--video-fps", type=float, default=10.0)
     parser.add_argument("--no-video", action="store_true", help="Save frames and metrics without encoding an MP4")
+    parser.add_argument("--intervention-policy", choices=("follow", "ignore"), default="follow")
     args = parser.parse_args()
     if args.gpu_id < 0:
         parser.error("--gpu-id must be non-negative")
@@ -328,7 +358,7 @@ def main() -> int:
     if not scene.is_absolute():
         scene = PROJECT_ROOT / scene
     output = args.output_dir if args.output_dir is not None else PROJECT_ROOT / "outputs" / config["episode_id"]
-    metrics = run(config, scene.resolve(), args.gpu_id, output)
+    metrics = run(config, scene.resolve(), args.gpu_id, output, args.intervention_policy)
     print(json.dumps(metrics, indent=2))
     print(f"Artifacts written to: {output}")
     if not args.no_video:

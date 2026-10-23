@@ -138,6 +138,73 @@ class NavigationIntegrationTests(unittest.TestCase):
             self.assertEqual(result["final_goal"], "b")
             self.assertEqual(result["stopped_goal"], "a")
 
+    def test_ignore_policy_updates_truth_but_keeps_original_physical_trajectory(self):
+        from scripts.run_ignore_intervention import check_negative
+
+        with tempfile.TemporaryDirectory() as temporary, ExitStack() as stack:
+            output = Path(temporary)
+            scene = output / "scene.glb"
+            scene.touch()
+            instances = self.simulator_patches(stack)
+            config = deepcopy(self.config)
+            config.update({"scene": str(scene), "resolution": [256, 256]})
+            control = deepcopy(config)
+            control["events"] = []
+            navigation.run(control, scene, 0, output / "control")
+            metrics = navigation.run(config, scene, 0, output / "ignored", intervention_policy="ignore")
+            report = check_negative(output / "ignored", config, output / "control")
+            self.assertTrue(report["negative_check_passed"], report["checks"])
+            self.assertEqual([sim.initializations for sim in instances], [1, 1])
+            self.assertFalse(metrics["dynamic_success"])
+            self.assertEqual(metrics["policy_goal"], "a")
+            self.assertEqual(metrics["final_goal"], "b")
+            self.assertEqual(metrics["stopped_goal"], "a")
+            self.assertEqual(metrics["termination"], "stopped_at_cancelled_goal")
+            self.assertEqual(metrics["post_intervention_spl"], 0.0)
+            self.assertIsNone(metrics["first_compliant_action_step"])
+            self.assertIsNone(metrics["response_latency_steps"])
+            self.assertEqual(metrics["ignored_event_count"], 1)
+            truth = json.loads((output / "ignored/final_task_state.json").read_text())
+            policy = json.loads((output / "ignored/final_policy_state.json").read_text())
+            self.assertEqual(truth["cancelled_goals"], ["a"])
+            self.assertEqual(policy["cancelled_goals"], [])
+            # An erroneous success flag must fail negative-control validation.
+            metrics["dynamic_success"] = True
+            (output / "ignored/metrics.json").write_text(json.dumps(metrics))
+            self.assertFalse(check_negative(output / "ignored", config)["negative_check_passed"])
+
+    def test_negative_control_rejects_an_event_that_was_never_delivered(self):
+        from scripts.run_ignore_intervention import check_negative
+
+        with tempfile.TemporaryDirectory() as temporary, ExitStack() as stack:
+            output = Path(temporary)
+            scene = output / "scene.glb"
+            scene.touch()
+            self.simulator_patches(stack)
+            config = deepcopy(self.config)
+            config["events"][0]["trigger"]["value"] = 29
+            navigation.run(config, scene, 0, output / "ignored", intervention_policy="ignore")
+            report = check_negative(output / "ignored", config)
+            self.assertFalse(report["negative_check_passed"])
+            self.assertFalse(report["checks"]["event_delivered_once"])
+
+    def test_negative_control_rejects_timeout_even_when_dynamic_success_is_false(self):
+        from scripts.run_ignore_intervention import check_negative
+
+        with tempfile.TemporaryDirectory() as temporary, ExitStack() as stack:
+            output = Path(temporary)
+            scene = output / "scene.glb"
+            scene.touch()
+            self.simulator_patches(stack)
+            config = deepcopy(self.config)
+            config["max_steps"] = 3
+            metrics = navigation.run(config, scene, 0, output / "ignored", intervention_policy="ignore")
+            self.assertFalse(metrics["dynamic_success"])
+            self.assertEqual(metrics["delivered_event_count"], 1)
+            report = check_negative(output / "ignored", config)
+            self.assertFalse(report["negative_check_passed"])
+            self.assertFalse(report["checks"]["failure_is_cancelled_goal_not_timeout"])
+
     def test_timeout_does_not_count_as_success(self):
         with tempfile.TemporaryDirectory() as temporary, ExitStack() as stack:
             output = Path(temporary)

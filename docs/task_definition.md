@@ -66,6 +66,12 @@ reads privileged goal positions and structured task updates. It validates task
 semantics and navigation plumbing; it does not implement the language-only agent
 interface described above. See `docs/intervention_001.md` for this experiment.
 
+The runner stores evaluator truth (`active_goal`, `task_state`) separately from
+policy state (`policy_goal`, `policy_task_state`). Follow mode applies the update
+to both states; Ignore Intervention mode updates only evaluator truth. In ignore
+mode, stopping at the original goal must fail, and response latency remains null.
+The negative-control acceptance procedure is documented in `docs/ignore_intervention.md`.
+
 ## Initial metrics
 
 - `dynamic_success`: whether the final effective goal was completed.
