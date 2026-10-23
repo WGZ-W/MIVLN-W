@@ -28,6 +28,8 @@ The last command runs matched control/intervention branches. Use the assigned GP
 
 Use four-space indentation, `snake_case` functions/modules, and `PascalCase` classes. Follow existing type annotations and `from __future__ import annotations` to preserve Python 3.9 compatibility. Keep core modules independent of Habitat and NumPy. Use descriptive JSON identifiers such as `episode_id` and `event_id`. No formatter or linter is currently configured.
 
+When adding or changing code, provide explanatory comments and docstrings generously, especially for non-obvious logic. Explain the purpose and reasoning of key steps, input/output contracts, coordinate frames and units, event timing, evaluator-versus-policy state, and important edge cases where applicable. Keep comments accurate when behavior changes; avoid comments that merely repeat straightforward statements.
+
 ## Testing Guidelines
 
 Use `unittest`, with files named `test_*.py` and methods named `test_<behavior>`. Habitat-dependent loop tests skip when Habitat is unavailable and use a fake simulator when installed. No numerical coverage threshold is configured. Add regression tests for changed task semantics, especially event timing, cancelled goals, STOP requirements, and timeout handling.
@@ -39,3 +41,8 @@ Follow existing prefixed commit subjects, e.g. `feat: add Habitat navigation che
 ## Experiment Invariants
 
 Deliver each event once, before its action. Preserve pose and history across goal replacement. Evaluate STOP using measured distance to the active goal. Document privileged Oracle inputs explicitly; do not present Oracle success as language-understanding performance.
+
+## Collaboration & Step Handoffs
+
+- At every task handoff, include a concrete next-step plan: the immediate objective, prerequisites, executable commands when applicable, expected outputs, and acceptance criteria. Clearly distinguish available commands from work that still needs implementation. A next-step plan does not authorize executing additional changes or GPU experiments.
+- At the end of each complete, coherent step, inspect the relevant Git changes and validation results, then explicitly state whether to commit now, defer the commit, or make no commit because nothing changed, with a brief reason. If a commit is appropriate, identify the files or logical groups and suggest a prefixed commit message; distinguish completed checks from pending GPU validation. Do not automatically stage, commit, or push without the user's authorization, and exclude datasets and generated experiment outputs.
