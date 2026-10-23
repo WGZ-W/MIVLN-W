@@ -107,6 +107,28 @@ python -m scripts.debug_dataset summarize --output-dir outputs/debug_dataset_001
 Failed tasks remain in the reports. See [`docs/debug_dataset.md`](docs/debug_dataset.md)
 for geometry filters, logs, video review, and reproduction commands.
 
+An Ignore Intervention negative control keeps the policy's target at A while the
+evaluator updates its independent task state to B. It checks that stopping at the
+cancelled target is rejected, with no compliant-action latency reported. Use
+`scripts.run_ignore_intervention` with a saved event configuration and an existing
+matching control directory. See [`docs/ignore_intervention.md`](docs/ignore_intervention.md)
+for the single-episode command and expected-failure acceptance checks.
+
+## HSSD scene preparation
+
+After downloading HSSD, check one complete furnished scene through its scene dataset configuration:
+
+```bash
+python -m scripts.check_hssd --assets-only --output-dir outputs/hssd_assets_001
+python -m scripts.check_hssd --scene-id 102344280 --gpu-id 0 --output-dir outputs/hssd_smoke_001
+```
+
+The first command needs no GPU; the second requires the `habitat` environment.
+It saves RGB-D, raw semantic IDs, object metadata/world bounds, room annotations,
+and a navigation mesh including static furniture. Asset availability and semantic
+label consistency are reported separately; metadata and lexicon labels can disagree.
+See [`docs/hssd_scene_check.md`](docs/hssd_scene_check.md) for acceptance checks and next steps.
+
 ## Project layout
 
 ```text
