@@ -14,6 +14,7 @@ import subprocess
 import sys
 
 from scripts.run_intervention import check_pair
+from scripts.navigation_scene import check_scene_match, navmesh_path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -75,8 +76,7 @@ def check_reference(config: dict, reference: Path) -> list:
                 "resolution", "max_steps"):
         if config[key] != episode[key]:
             raise ValueError(f"Base configuration and reference differ: {key}")
-    if project_path(config["scene"]) != project_path(episode["scene"]):
-        raise ValueError("Base configuration and reference use different scenes")
+    check_scene_match(config, episode)
     goal = config["initial_goal"]
     if config["goal_positions"][goal] != episode["goal_positions"][goal]:
         raise ValueError("Base configuration and reference use different initial goal positions")
@@ -144,12 +144,14 @@ def prepare(args) -> int:
     validate_config(config)
     if len(config.get("events", [])) != 1:
         raise ValueError("The base configuration must contain exactly one replace_goal event")
+    if config.get("scene_dataset_config") and not getattr(args, "keep_target", False):
+        raise ValueError("HSSD semantic targets must not be resampled; use --keep-target")
     if args.min_separation <= 2 * config["success_radius_m"]:
         raise ValueError("min-separation must exceed twice the success radius")
     reference = args.reference_dir.resolve()
     trajectory = check_reference(config, reference)
     cases = select_triggers(trajectory)
-    navmesh = project_path(config["scene"]).with_suffix(".navmesh")
+    navmesh = navmesh_path(config)
     pathfinder = habitat_sim.PathFinder()
     if not pathfinder.load_nav_mesh(str(navmesh)):
         raise FileNotFoundError(f"Cannot load navigation mesh: {navmesh}")
@@ -173,7 +175,8 @@ def prepare(args) -> int:
         variant["events"] = [{
             "event_id": f"replace_goal_{case['name']}",
             "trigger": {"type": "step", "value": case["trigger_step"]},
-            "utterance": "Cancel going to point A. Go to point B instead.",
+            "utterance": (config["events"][0]["utterance"] if config.get("scene_dataset_config")
+                          else "Cancel going to point A. Go to point B instead."),
             "task_update": {"operation": "replace_goal", "old_goal": old_goal, "new_goal": new_goal},
         }]
         validate_config(variant)

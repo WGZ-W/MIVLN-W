@@ -66,6 +66,7 @@ python -m scripts.export_video --episode-dir outputs/hssd_smoke_001 --fps 2
 在它们附近采样导航网格上的可达停止点，再复用目标替换和 Ignore Intervention 对照。
 物体原点或 AABB 中心可能位于家具内部，不能直接作为导航终点；
 场景、导航网格参数和目标配置也必须同时接入导航实验，不能只替换原来的场景 GLB 路径。
+入口现已适配，床 A 的首次实际导航配置与运行命令见 [HSSD 首个实际导航](hssd_navigation_001.md)。
 
 ## 无 GPU 回归测试
 

@@ -129,6 +129,18 @@ and a navigation mesh including static furniture. Asset availability and semanti
 label consistency are reported separately; metadata and lexicon labels can disagree.
 See [`docs/hssd_scene_check.md`](docs/hssd_scene_check.md) for acceptance checks and next steps.
 
+After the target close-ups have been reviewed, run the first actual HSSD navigation
+to the bed's configured stopping point:
+
+```bash
+python -m scripts.run_navigation --config configs/simulator/hssd_navigation_001.json --gpu-id 0 --output-dir outputs/hssd_navigation_001 --no-video
+```
+
+This configuration loads the complete scene instance, verifies input hashes and
+the furniture-inclusive navigation mesh dimensions, and records raw semantic frames.
+It is still a privileged Oracle point-goal check, not a language-following or
+object-visibility benchmark. See [`docs/hssd_navigation_001.md`](docs/hssd_navigation_001.md).
+
 ## Project layout
 
 ```text

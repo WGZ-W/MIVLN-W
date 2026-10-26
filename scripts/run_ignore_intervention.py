@@ -10,6 +10,7 @@ import sys
 
 from scripts.export_video import export_video, find_ffmpeg
 from scripts.intervention_timing import load_json, project_path, write_json
+from scripts.navigation_scene import check_scene_match
 
 
 def validate_reference(config: dict, reference: Path) -> None:
@@ -20,8 +21,7 @@ def validate_reference(config: dict, reference: Path) -> None:
             "forward_step_m", "turn_angle_degrees", "success_radius_m", "sensor_height", "resolution", "max_steps")
     if any(episode[key] != config[key] for key in keys):
         raise ValueError("Reference and negative-control configurations must use the same task and navigation parameters")
-    if project_path(episode["scene"]) != project_path(config["scene"]):
-        raise ValueError("Reference and negative control use different scenes")
+    check_scene_match(config, episode)
 
 
 def check_negative(output: Path, config: dict, reference: Path = None) -> dict:

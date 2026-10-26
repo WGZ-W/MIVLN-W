@@ -1,0 +1,50 @@
+{
+  "episode_id": "hssd_navigation_001",
+  "scene": "data/scene_datasets/hssd-hab/scenes/102344280.scene_instance.json",
+  "scene_id": "102344280",
+  "scene_dataset_config": "data/scene_datasets/hssd-hab/hssd-hab.scene_dataset_config.json",
+  "scene_dataset_config_sha256": "186cbbd5fe8b53ddd1cc0dfb3c9084e75db8ec6cd05ba178a5b43890f36b25e2",
+  "scene_sha256": "cd341cd6c600dad1f428583ad648a7c77c9460ac831d168d0cabec8982d572f0",
+  "dataset_revision": "4369cb9876214c7fbebcf552eb532380e4d287e4",
+  "navmesh": "outputs/hssd_smoke_001/scene.navmesh",
+  "navmesh_sha256": "0c32b35b070d1f48971698a82cd608d691bc4f5a8ee62778d9c48212c8653215",
+  "agent_height": 1.5,
+  "agent_radius": 0.1,
+  "semantic_sensor": true,
+  "initial_instruction": "Go to the brushed gold metal bed and stop beside it.",
+  "initial_goal": "bed_a",
+  "start_position": [-1.9973578453063965, 0.15372097492218018, -2.126014232635498],
+  "start_rotation_xyzw": [0.0, 0.0, 0.0, 1.0],
+  "goal_positions": {
+    "bed_a": [2.4289004802703857, 0.15372097492218018, -4.50770902633667],
+    "couch_b": [-4.283631324768066, 0.15372097492218018, -2.4513697624206543]
+  },
+  "goal_metadata": {
+    "bed_a": {
+      "template_id": "7c3c32c496d7eb37286ff8ad3ddf5384ba30b2ae",
+      "source_instance_index": 20,
+      "category": "bed",
+      "display_name": "Brushed Gold Full Metal Bed",
+      "preview_rgb": "outputs/hssd_targets_001/bed_a_rgb.png"
+    },
+    "couch_b": {
+      "template_id": "ed4ed55a08fac410b09e2d1f351d84893eaa7136",
+      "source_instance_index": 54,
+      "category": "couch",
+      "display_name": "Magnolia Home Sinclair Luxe Sofa By Joanna Gaines, Midnight",
+      "preview_rgb": "outputs/hssd_targets_001/couch_b_rgb.png"
+    }
+  },
+  "goal_source": {
+    "report": "outputs/hssd_targets_001/targets.json",
+    "sha256": "2c21989214fb75a74c990207d1b09c3b2f1d99ee503e614450c0f4066437a301"
+  },
+  "events": [],
+  "success_radius_m": 0.3,
+  "max_steps": 500,
+  "seed": 42,
+  "resolution": [256, 256],
+  "sensor_height": 1.5,
+  "forward_step_m": 0.25,
+  "turn_angle_degrees": 15.0
+}

@@ -3,6 +3,7 @@
 from copy import deepcopy
 from contextlib import ExitStack
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -34,7 +35,7 @@ class NavigationIntegrationTests(unittest.TestCase):
             "forward_step_m": 0.25, "turn_angle_degrees": 15.0, "sensor_height": 1.5,
         }
 
-    def simulator_patches(self, stack, ignore_new_goal=False):
+    def simulator_patches(self, stack, ignore_new_goal=False, explicit_mesh=False, rigid_count=1):
         np = navigation.np
         instances = []
 
@@ -47,8 +48,16 @@ class NavigationIntegrationTests(unittest.TestCase):
                 instances.append(self)
                 self.agent = FakeAgent()
                 self.initializations = 0
+                self.mesh_loads = []
+                def load_mesh(path):
+                    self.mesh_loads.append(path)
+                    self.pathfinder.is_loaded = True
+                    return True
                 self.pathfinder = SimpleNamespace(
-                    is_loaded=True, seed=lambda value: None, is_navigable=lambda position: True,
+                    is_loaded=not explicit_mesh, seed=lambda value: None, is_navigable=lambda position: True,
+                    load_nav_mesh=load_mesh, navigable_area=10.0, num_islands=1,
+                    nav_mesh_settings=SimpleNamespace(agent_height=1.5, agent_radius=0.1,
+                                                      include_static_objects=True),
                 )
 
             def __enter__(self):
@@ -59,6 +68,9 @@ class NavigationIntegrationTests(unittest.TestCase):
 
             def seed(self, value):
                 pass
+
+            def get_rigid_object_manager(self):
+                return SimpleNamespace(get_object_handles=lambda: list(range(rigid_count)))
 
             def initialize_agent(self, index, state):
                 self.initializations += 1
@@ -101,6 +113,62 @@ class NavigationIntegrationTests(unittest.TestCase):
         stack.enter_context(patch.object(navigation.habitat_sim, "Simulator", FakeSimulator))
         stack.enter_context(patch.object(navigation.habitat_sim.nav, "GreedyGeodesicFollower", FakeFollower))
         return instances
+
+    def hssd_config(self, root):
+        scene = root / "scenes/test.scene_instance.json"
+        scene.parent.mkdir()
+        scene.write_text(json.dumps({"object_instances": [{"template_name": "bed"}]}))
+        dataset = root / "dataset.json"
+        dataset.write_text("{}")
+        mesh = root / "mesh.navmesh"
+        mesh.write_bytes(b"mesh-fixture")
+        config = deepcopy(self.config)
+        config.update({"scene": str(scene), "scene_id": "test", "scene_dataset_config": str(dataset),
+                       "navmesh": str(mesh), "navmesh_sha256": hashlib.sha256(mesh.read_bytes()).hexdigest(),
+                       "agent_height": 1.5, "agent_radius": 0.1, "semantic_sensor": True,
+                       "resolution": [256, 256]})
+        return config, scene
+
+    def test_hssd_explicit_mesh_supports_control_follow_and_ignore_without_reset(self):
+        from scripts.run_ignore_intervention import check_negative
+
+        with tempfile.TemporaryDirectory() as temporary, ExitStack() as stack:
+            root = Path(temporary)
+            config, scene = self.hssd_config(root)
+            instances = self.simulator_patches(stack, explicit_mesh=True)
+            control = deepcopy(config)
+            control["events"] = []
+            navigation.run(control, scene, 0, root / "control")
+            navigation.run(config, scene, 0, root / "intervention")
+            navigation.run(config, scene, 0, root / "ignore", intervention_policy="ignore")
+            self.assertTrue(check_pair(root, config["events"][0])["passed"])
+            self.assertTrue(check_negative(root / "ignore", config, root / "control")["negative_check_passed"])
+            self.assertEqual([sim.initializations for sim in instances], [1, 1, 1])
+            self.assertEqual([sim.mesh_loads for sim in instances], [[config["navmesh"]]] * 3)
+            episode = json.loads((root / "control/episode.json").read_text())
+            self.assertEqual(episode["loaded_rigid_objects"], 1)
+            self.assertEqual(episode["navmesh_sha256"], config["navmesh_sha256"])
+            self.assertTrue(episode["navmesh_settings"]["include_static_objects"])
+
+    def test_hssd_hash_mismatch_fails_before_simulator_and_output_creation(self):
+        with tempfile.TemporaryDirectory() as temporary, ExitStack() as stack:
+            root = Path(temporary)
+            config, scene = self.hssd_config(root)
+            config["navmesh_sha256"] = "0" * 64
+            instances = self.simulator_patches(stack)
+            with self.assertRaisesRegex(ValueError, "SHA256 mismatch"):
+                navigation.run(config, scene, 0, root / "run")
+            self.assertEqual(instances, [])
+            self.assertFalse((root / "run").exists())
+
+    def test_hssd_missing_furniture_fails_before_initializing_agent(self):
+        with tempfile.TemporaryDirectory() as temporary, ExitStack() as stack:
+            root = Path(temporary)
+            config, scene = self.hssd_config(root)
+            instances = self.simulator_patches(stack, explicit_mesh=True, rigid_count=0)
+            with self.assertRaisesRegex(RuntimeError, "rigid object count"):
+                navigation.run(config, scene, 0, root / "run")
+            self.assertEqual(instances[0].initializations, 0)
 
     def test_paired_episode_switches_before_action_without_reset(self):
         with tempfile.TemporaryDirectory() as temporary, ExitStack() as stack:
