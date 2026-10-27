@@ -1,6 +1,6 @@
 # MI-VLN 项目整体框架与实施路线
 
-更新时间：2026-10-23。本文依据当前代码、配置和本地实验产物整理，区分“已有实现”“已经运行验证”和“后续设计”，作为现阶段的项目导航文档。本文不修改既有任务规范；未来新增规则仍需更新规范、代码和测试。
+更新时间：2026-10-26。本文依据当前代码、配置和本地实验产物整理，区分“已有实现”“已经运行验证”和“后续设计”，作为现阶段的项目导航文档。本文不修改既有任务规范；未来新增规则仍需更新规范、代码和测试。
 
 ## 1. 项目最终要解决什么问题
 
@@ -50,9 +50,10 @@
 | 多任务坐标调试 | 已运行 | `outputs/debug_dataset_001/summary.json`：10 个任务、30 组配对全部通过 |
 | 忽略介入负对照 | 单例已运行 | `outputs/ignore_intervention_001/negative_check.json`：验收通过、任务按预期失败 |
 | HSSD 完整场景加载 | 已运行 | `outputs/hssd_smoke_001/metrics.json`：`success: true` |
-| HSSD 语义目标导航及三种对照 | 入口已适配，实际导航待运行 | 两处目标近景检查通过，已提供床 A 无介入配置，三条件尚未实跑 |
+| HSSD 语义目标导航及三种对照 | 单任务三档时机已运行 | `outputs/hssd_timing_001/summary.json`：3 组配对通过；早/晚 Ignore 在 timing 子目录，中期在 `outputs/hssd_ignore_intervention_001/`，均按预期失败 |
+| HSSD 语义多任务管线 | 已实现，真实批量导航未运行 | `hssd_targets` 管理审核，`hssd_dataset` 冻结和运行三条件；4 个真实目标候选仍待新预览和显式审核 |
 | 语言理解策略、禁区、子任务恢复 | 尚未实现 | 不属于当前实验结论 |
-| 自动测试 | 当前 49 项通过 | 在 `habitat` 环境运行测试；测试不启动 GPU 模拟器 |
+| 自动测试 | 当前 64 项通过 | 在 `habitat` 环境运行测试；测试不启动 GPU 模拟器 |
 
 ### 3.1 已有调试实验说明了什么
 
@@ -70,7 +71,14 @@ Ignore 负例在第 29 步收到事件，评价器改为 B，策略保持 A；�
 
 语义数据不能直接当作可靠目标真值：23 个实例的模板没有类别 ID，25 个实例的模板词表标签与 metadata 类别不一致。原始文件有 15 条区域标注，但运行时 semantic objects/regions 均为空。物体列表由 rigid object manager 导出，区域标注从原始文件单独导出，不应混为一谈。
 
-HSSD 已通过加载、传感器、导航网格、参考路径及 `outputs/hssd_targets_001/` 两处目标近景检查，但尚未验证机器人实际走到语义目标。近景来自直接放置与相机调整，不替代导航；原报告的复核标志未改写。导航入口已适配，首个无介入配置为 `configs/simulator/hssd_navigation_001.json`。
+HSSD 首次实际导航已成功：46 个动作，到床 A 配置停止点的误差为 0.097 m，碰撞标记为 0。
+随后同一任务早/中/晚配对全部通过，介入动作步号为 16/25/38；follow 分支分别执行 47/67/92 个动作，
+总路程约 6.250/9.754/13.008 m，终点误差约 0.079/0.072/0.281 m。
+三档 Ignore 都继续停在已取消的床 A，并正确判失败。已核对位姿连续性、原始观测前缀和终点关键帧；
+不能据此宣称已人工看完全部视频、完成多任务泛化或实现语言理解。
+
+新增 `outputs/hssd_catalog_001/catalog.json` 包含 3 张床和 1 个沙发的几何候选，状态全部为 pending。
+CPU 几何试采样能够构造 10 个任务，但没有保存为正式数据集；必须先完成四目标预览及至少三个实例的显式审核。
 
 ## 4. 总体系统架构
 
@@ -109,7 +117,7 @@ HSSD 资产 → 语义核验 → 可达停止区域 → 基础任务与介入 �
 
 负责完整 HSSD dataset config、scene instance、家具、传感器、动作、碰撞、导航网格与版本记录。提供稳定的 `reset`、观测、原子动作执行、位姿读取和结束接口；这些接口是后续设计，不是现有公共 API。
 
-当前 `check_hssd.py` 和 `run_navigation.py` 均已支持完整 HSSD dataset config；导航入口同时加载 scene ID、已核验网格与 agent 高度/半径，并检查哈希、静态家具设置及家具加载数量。旧 GLB 配置保持兼容，首次实际 HSSD GPU 导航仍待执行。Habitat-Lab 可在后续需要统一任务/训练接口时引入，不应把原方案中的平台选择误写为当前依赖已经全部接通。
+当前 `check_hssd.py` 和 `run_navigation.py` 均已支持完整 HSSD dataset config；导航入口同时加载 scene ID、已核验网格与 agent 高度/半径，并检查哈希、静态家具设置及家具加载数量。旧 GLB 配置保持兼容，单任务 HSSD GPU 导航及三档对照已通过。Habitat-Lab 可在后续需要统一任务/训练接口时引入，不应把原方案中的平台选择误写为当前依赖已经全部接通。
 
 ### 5.2 语义目标与空间约束
 
@@ -227,19 +235,23 @@ SPL 不是精确终点到达的证明：停止容差可能使实走距离小于�
 
 ## 10. 后续实施路线与验收门槛
 
-### P1：完成一个 HSSD 语义目标替换闭环——当前最高优先级
+### P1：完成一个 HSSD 语义目标替换闭环——已完成自动验收
 
-1. 目标近景检查已完成，床 A 与沙发 B 清楚可见。对应本次运行床 ID 21、沙发 ID 55，起点到两点约 7.04/2.31 m，两点间约 9.34 m；配置保留稳定模板与源实例索引，实际导航及最终视角待验证。
+1. 目标近景检查已完成，床 A 与沙发 B 清楚可见。对应本次运行床 ID 21、沙发 ID 55，起点到两点约 7.04/2.31 m，两点间约 9.34 m；配置保留稳定模板与源实例索引，实际导航及最终关键帧已检查。
 2. 导航入口已完成完整场景配置、scene ID、网格和尺寸参数适配，并保留旧测试场景兼容性。
-3. 先在 HSSD 实际执行到 A 并 STOP 的普通 Oracle 导航，验证运动，不以静态最短路查询代替。
-4. 根据参考轨迹确定有效介入时机；在同一基础任务上运行无介入、正确处理、忽略介入三种条件。
-5. 输出完整轨迹、事件、状态、指标和视频，复核事件附近及最终停止片段。
+3. HSSD 普通 Oracle 导航已实际到 A 并 STOP。
+4. 根据参考轨迹确定三档时机，control/follow/ignore 三种条件均已通过对应验收。
+5. 轨迹、事件、状态与指标已输出，关键图像已检查；三档批次的视频仍需另行导出和完整人工复核。
 
 **通过条件**：控制到 A 成功；follow 从当前状态转到 B 成功；ignore 停在已取消的 A 并被判失败；事件准确投递，位姿和历史连续，实际任务配置一致，目标可见性与语言描述已人工确认。
 
-### P2：HSSD 小规模语义调试集
+### P2：HSSD 小规模语义调试集——当前最高优先级
 
-完成 10～20 个固定基础任务，覆盖不同实例和布局；迁移三档时机及负对照，保留全部失败原因。先建立可审计的目标目录与数据清单，不直接扩大训练集。语言/策略接口在此阶段固定，先确保不传入 evaluator-only 字段。
+相关入口已实现：`scripts.hssd_targets` 生成候选、GPU 预览与版本化审核决定，`scripts.hssd_dataset` 只使用获批实例生成固定任务。
+先完成候选的视觉审核，再以 10 个任务为首批，按 1 条参考加三档三条件规划 100 个 episode；
+后续可扩至 20 个任务。配置哈希、稳定实例引用、三条件验收和失败分母均固定。
+当前真实多任务 GPU 实验未运行，不能把模拟器替身测试或 CPU 试采样写成实验成功。
+详细步骤见 [HSSD 多任务语义实验](hssd_semantic_dataset.md)。
 
 ### P3：实现其余两类介入
 
@@ -269,6 +281,7 @@ SPL 不是精确终点到达的证明：停止容差可能使实走距离小于�
 - `scripts/check_hssd.py`：资产及单场景检查；`run_navigation.py`：原子导航循环。
 - `scripts/run_intervention.py`、`run_ignore_intervention.py`：正/负对照和验收。
 - `scripts/intervention_timing.py`、`debug_dataset.py`：时机配置、调试集合与汇总。
+- `scripts/hssd_targets.py`、`hssd_dataset.py`：带审核门槛的语义目标目录及三条件多任务管线。
 - `configs/`：可复现输入；`tests/`：状态、事件、评价、几何及模拟循环回归测试。
 - `docs/`：规范、命令和决策；`latex/`：论文草稿；`resource/`：参考材料。
 
@@ -280,7 +293,7 @@ Linux 服务器负责仿真与实验。延续当前协作方式：代码与 CPU 
 
 ## 12. 常用命令与现有文档索引
 
-以下命令均已存在；仿真命令由使用者选择分配的 GPU 执行。输出目录必须是新的。现已提供 HSSD 普通导航入口和配置；三条件实验仍需先完成参考导航并据此生成有效事件配置，不能假定已经全部实跑通过。
+以下命令均已存在；仿真命令由使用者选择分配的 GPU 执行。输出目录必须是新的。单任务三条件已完成；当前优先执行四目标预览和审核，之后才能准备真实的多任务数据集。
 
 ```bash
 # 在项目根目录、合适的 Python 环境中执行。
@@ -297,6 +310,9 @@ python -m scripts.run_navigation --config configs/simulator/hssd_navigation_001.
 
 # 已完成坐标调试实验的离线汇总，不启动模拟器。
 python -m scripts.debug_dataset summarize --output-dir outputs/debug_dataset_001
+
+# 新目标目录已完成 CPU 候选生成，下一步执行预览，不会自动批准目标。
+python -m scripts.hssd_targets preview --catalog outputs/hssd_catalog_001/catalog.json --output-dir outputs/hssd_catalog_preview_001 --gpu-id 0
 ```
 
 相关依据：
@@ -306,6 +322,7 @@ python -m scripts.debug_dataset summarize --output-dir outputs/debug_dataset_001
 - [坐标目标替换](intervention_001.md)、[三档时机](intervention_timing.md)、[调试集合](debug_dataset.md)、[负对照](ignore_intervention.md)：解释已实现实验。
 - [HSSD 检查指南](hssd_scene_check.md)：当前家庭场景接入状态与运行方法。
 - [HSSD 首个实际导航](hssd_navigation_001.md)：入口配置、执行命令与 STOP 验收标准。
+- [HSSD 多任务语义实验](hssd_semantic_dataset.md)：候选、预览、人工审核、固定采样与三条件汇总。
 - [组会汇报](group_meeting_presentation_2026-10-23.md)、[周报](weekly_report_2026-10-22.md)：阶段性汇报，时间早于本文部分检查结果。
 
-**当前下一步结论：先把“带语义的可达目标”变成 HSSD 中实际完成的三条件导航实验，再扩展任务类型、语言方法和数据规模；不要继续只累积坐标 Oracle 成功率，也不要提前声称已经完成 MI-VLN Benchmark。**
+**当前下一步结论：单任务三条件已通过，先完成新增目标审核和 10 个固定 HSSD 语义任务的真实批量验证，再扩展任务类型、语言方法和场景规模；不要把 Oracle 单例成功提前表述为完成 MI-VLN Benchmark。**

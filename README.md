@@ -141,6 +141,19 @@ the furniture-inclusive navigation mesh dimensions, and records raw semantic fra
 It is still a privileged Oracle point-goal check, not a language-following or
 object-visibility benchmark. See [`docs/hssd_navigation_001.md`](docs/hssd_navigation_001.md).
 
+For the next multi-task experiment, use the review-gated semantic workflow:
+
+```bash
+python -m scripts.hssd_targets prepare --output-dir outputs/hssd_catalog_001
+python -m scripts.hssd_targets preview --catalog outputs/hssd_catalog_001/catalog.json --output-dir outputs/hssd_catalog_preview_001 --gpu-id 0
+```
+
+Candidates are never auto-approved. After explicit visual review of at least three
+distinct objects, `scripts.hssd_dataset` can freeze 10 semantic tasks and run
+reference plus early/middle/late control/follow/ignore conditions (100 episodes).
+See [`docs/hssd_semantic_dataset.md`](docs/hssd_semantic_dataset.md) for versioned
+review decisions, preparation, batch execution, failure accounting, and summaries.
+
 ## Project layout
 
 ```text
