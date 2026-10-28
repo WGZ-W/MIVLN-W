@@ -17,6 +17,7 @@ from scripts.intervention_timing import TIMINGS, check_reference, load_json, sel
 from scripts.navigation_scene import check_scene_match
 from scripts.run_ignore_intervention import check_negative
 from scripts.run_intervention import check_pair
+from scripts import terminal_view
 
 
 # Only these shared settings may be inherited. In particular, old goal_metadata,
@@ -26,6 +27,7 @@ NAVIGATION_KEYS = (
     "dataset_revision", "navmesh", "navmesh_sha256", "agent_height", "agent_radius",
     "semantic_sensor", "success_radius_m", "max_steps", "resolution", "sensor_height",
     "forward_step_m", "turn_angle_degrees",
+    "terminal_alignment", "terminal_visibility",
 )
 TASK_KEYS = ("initial_instruction", "initial_goal", "start_position", "start_rotation_xyzw", "goal_positions",
              "goal_metadata", "catalog_source", "seed", "max_steps", "resolution", "sensor_height",
@@ -173,6 +175,53 @@ def validate_inputs(output: Path, manifest: dict) -> None:
                 raise ValueError(f"Frozen task configuration changed: {task['task_id']} {key}")
 
 
+def derive_facing(args) -> int:
+    """Derive the SAME fixed tasks, not a new random sample or a rewrite of v1."""
+    source = args.source_dir.resolve()
+    manifest = load_json(source / "manifest.json")
+    validate_inputs(source, manifest)
+    from scripts.run_navigation import validate_config
+
+    source_manifest_hash = sha256(source / "manifest.json")
+    derived = deepcopy(manifest)
+    derived["terminal_protocol"] = {"version": 1, "method": "isolated_instance_semantic_relabel_v1",
+                                    "min_pixels": args.min_pixels, "parent_dataset": str(source),
+                                    "parent_manifest_sha256": source_manifest_hash}
+    prepared = []
+    for task in derived["tasks"]:
+        for key in ("base_config", "reference_config"):
+            config = load_json(within(source, task[key]))
+            config["terminal_alignment"] = {"enabled": True,
+                "yaw_tolerance_degrees": config["turn_angle_degrees"] / 2, "max_turn_actions": 24}
+            config["terminal_visibility"] = {"enabled": True, "min_pixels": args.min_pixels}
+            config["episode_id"] += "_facing"
+            validate_config(config)
+            task[f"parent_{key}_sha256"] = task[f"{key}_sha256"]
+            prepared.append((task, key, config))
+    # Reuse an actually verified early trigger for the first two-branch smoke test.
+    # The full batch will generate new reference trajectories and triggers itself.
+    first = derived["tasks"][0]
+    old_base = load_json(within(source, first["base_config"]))
+    reference = check_reference(old_base, within(source, first["output_subdir"]) / "reference")
+    early = select_triggers(reference)[0]
+    smoke = load_json(within(source, first["output_subdir"]) / "timing/configs/early.json")
+    same_task(old_base, smoke)
+    if smoke["events"][0]["trigger"]["value"] != early["trigger_step"]:
+        raise ValueError("Source smoke trigger differs from the actual reference")
+    smoke.update({key: deepcopy(prepared[0][2][key]) for key in ("terminal_alignment", "terminal_visibility")})
+    smoke["episode_id"] += "_facing_smoke"
+    validate_config(smoke)
+    args.output_dir.mkdir(parents=True, exist_ok=False)
+    for task, key, config in prepared:
+        path = within(args.output_dir, task[key])
+        write_json(path, config)
+        task[f"{key}_sha256"] = sha256(path)
+    write_json(args.output_dir / "smoke_config.json", smoke)
+    write_json(args.output_dir / "manifest.json", derived)
+    print(f"Derived {len(derived['tasks'])} unchanged start/A/B/seed tasks; run smoke_config.json first")
+    return 0
+
+
 def run(args) -> int:
     """Execute once, retain failures, and never replace tasks after GPU outcomes."""
     output = args.output_dir.resolve()
@@ -231,7 +280,7 @@ def run(args) -> int:
                 statuses[task["task_id"]].append({"stage": f"{timing}_ignore", "returncode": None,
                                                    "reason": "No successful matching control; condition not run"})
                 write_json(output / "run_status.json", statuses)
-    return 0 if summarize(output)["passed"] else 1
+    return 0 if acceptance_passed(summarize(output)) else 1
 
 
 def same_task(base: dict, episode: dict) -> None:
@@ -285,14 +334,73 @@ def condition_statistics(cases, total):
     """Missing runs remain in success denominators; means name their sample counts."""
     result = {"total": total, "available": sum(case["available"] for case in cases),
               "validation_passed": sum(case["passed"] for case in cases),
-              "dynamic_successes": sum(case["dynamic_success"] is True for case in cases)}
+              "dynamic_successes": sum(case["dynamic_success"] is True for case in cases),
+              "terminal_evaluated": sum(case.get("terminal_visibility_evaluated") is True for case in cases),
+              "terminal_semantic_successes": sum(case.get("terminal_semantic_success") is True for case in cases)}
     result["dynamic_success_rate"] = result["dynamic_successes"] / total if total else None
     result["metric_counts"] = {}
-    for key in ("steps", "path_length_m", "navigation_error_m", "post_intervention_spl", "collision_count"):
+    for key in ("steps", "path_length_m", "navigation_error_m", "post_intervention_spl", "collision_count", "terminal_alignment_turns"):
         values = [case[key] for case in cases if type(case.get(key)) in (int, float) and math.isfinite(case[key])]
         result[f"mean_{key}"] = sum(values) / len(values) if values else None
         result["metric_counts"][key] = len(values)
     return result
+
+
+def terminal_record(base, metrics, trajectory, directory, condition) -> dict:
+    """Recheck diagnostic identity, thresholds and payload hashes without a GPU."""
+    result = {"condition": condition, "evaluated": False, "passed": False, "visible": None,
+              "semantic_success": None, "error": None}
+    try:
+        report_path = directory / "terminal_diagnostics.json"
+        if sha256(report_path) != metrics["terminal_diagnostics_sha256"]:
+            raise ValueError("Terminal diagnostic report hash mismatch")
+        report = load_json(report_path)
+        if not report["evaluated"]:
+            raise ValueError(f"Terminal diagnostic unavailable: {report.get('error')}")
+        goal = metrics["final_goal"]
+        metadata = base["goal_metadata"][goal]
+        if (report["goal_id"] != goal or report["template_id"] != metadata["template_id"]
+                or report["source_instance_index"] != metadata["source_instance_index"]
+                or report["method"] != "isolated_instance_semantic_relabel_v1"
+                or not report["labels_restored"] or not report["pose_unchanged"]
+                or report["pose"] != {key: trajectory[-1][key] for key in ("position", "rotation_xyzw")}):
+            raise ValueError("Terminal diagnostic target or pose differs from evaluator truth")
+        files = report["files"]
+        expected = {"terminal_instance_mask.npy", "terminal_instance_mask.png", "terminal_rgb.png"}
+        if len(files) != 3 or {entry["path"] for entry in files} != expected:
+            raise ValueError("Incomplete terminal instance evidence")
+        for entry in files:
+            if sha256(within(directory, entry["path"])) != entry["sha256"]:
+                raise ValueError("Terminal instance evidence changed")
+        threshold = base["terminal_visibility"].get("min_pixels", 64)
+        pixels = report["instance_pixels"]
+        visible = pixels >= threshold
+        point_success = metrics["dynamic_success"]
+        if (type(pixels) is not int or not 0 <= pixels <= math.prod(base["resolution"])
+                or report["min_pixels"] != threshold or report["instance_visible"] != visible
+                or metrics["terminal_instance_pixels"] != pixels or metrics["terminal_instance_visible"] != visible
+                or metrics["point_goal_success"] != point_success
+                or metrics["terminal_semantic_success"] != bool(point_success and visible)):
+            raise ValueError("Terminal metrics disagree with independent instance evidence")
+        if terminal_view.enabled(base, "terminal_alignment"):
+            yaw_error = metrics["terminal_yaw_error_degrees"]
+            turns = [row for row in trajectory if row.get("controller_phase") == "terminal_align"]
+            if (not metrics["terminal_alignment_complete"] or yaw_error is None or not math.isfinite(yaw_error)
+                    or abs(yaw_error) > base["terminal_alignment"].get("yaw_tolerance_degrees", 7.5) + 1e-5
+                    or len(turns) != metrics["terminal_alignment_turns"]
+                    or any(row["action"] not in ("turn_left", "turn_right") or row["distance_m"] > 1e-5 for row in turns)):
+                raise ValueError("Terminal facing was not completed with recorded in-place turns before STOP")
+        result.update({"evaluated": True, "visible": visible, "semantic_success": bool(point_success and visible),
+                       "passed": bool(point_success and visible) if condition != "ignore" else not point_success})
+        if not result["passed"]:
+            result["error"] = "Point goal reached but target instance not visible at STOP"
+    except (OSError, ValueError, KeyError, TypeError, IndexError) as error:
+        result["error"] = str(error)
+    return result
+
+
+def acceptance_passed(report: dict) -> bool:
+    return bool(report["passed"] and (not report["terminal_checks"]["enabled"] or report["terminal_checks"]["passed"]))
 
 
 def summarize(output: Path) -> dict:
@@ -304,7 +412,8 @@ def summarize(output: Path) -> dict:
         validate_inputs(output, manifest)
     except (OSError, ValueError, KeyError, TypeError) as error:
         global_errors.append(str(error))
-    rows, cases, observed = [], [], 0
+    rows, cases, observed, terminal_results = [], [], 0, []
+    terminal_enabled = bool(manifest.get("terminal_protocol"))
     for task in manifest["tasks"]:
         destination = within(output, task["output_subdir"])
         row = {"task_id": task["task_id"], "passed": False, "reference_success": False, "errors": [], "timings": []}
@@ -315,6 +424,11 @@ def summarize(output: Path) -> dict:
             same_task(base, load_json(destination / "reference/episode.json"))
             check_episode_records(base, base, "control", destination / "reference",
                                   load_json(destination / "reference/metrics.json"), reference)
+            if terminal_view.enabled(base, "terminal_visibility"):
+                terminal_enabled = True
+                terminal_results.append({"task_id": task["task_id"], "timing": "reference",
+                    **terminal_record(base, load_json(destination / "reference/metrics.json"), reference,
+                                      destination / "reference", "reference")})
             triggers = {item["name"]: item for item in select_triggers(reference)}
             row["reference_success"] = True
         except (OSError, ValueError, KeyError, TypeError, IndexError) as error:
@@ -334,7 +448,9 @@ def summarize(output: Path) -> dict:
                     metrics = load_json(directory / "metrics.json")
                     item["available"] = True
                     item.update({key: metrics.get(key) for key in ("dynamic_success", "steps", "path_length_m",
-                                "navigation_error_m", "post_intervention_spl", "collision_count", "termination")})
+                                "navigation_error_m", "post_intervention_spl", "collision_count", "termination",
+                                "point_goal_success", "terminal_alignment_turns", "terminal_visibility_evaluated",
+                                "terminal_instance_visible", "terminal_semantic_success")})
                     if base is None or timing not in triggers:
                         raise ValueError("Valid frozen reference and trigger unavailable")
                     variant = load_json(destination / f"timing/configs/{timing}.json")
@@ -350,6 +466,12 @@ def summarize(output: Path) -> dict:
                         raise ValueError("Recorded event configuration does not match this condition")
                     trajectory = load_json(directory / "trajectory.json")
                     check_episode_records(base, variant, condition, directory, metrics, trajectory)
+                    if terminal_view.enabled(base, "terminal_visibility"):
+                        terminal_enabled = True
+                        diagnostic = terminal_record(base, metrics, trajectory, directory, condition)
+                        terminal_results.append({"task_id": task["task_id"], "timing": timing, **diagnostic})
+                        item["terminal_protocol_passed"] = diagnostic["passed"]
+                        item["terminal_error"] = diagnostic["error"]
                     if condition == "control":
                         item["passed"] = bool(trajectory == reference and metrics["dynamic_success"]
                             and trajectory[-1]["action"] == "STOP"
@@ -394,6 +516,18 @@ def summarize(output: Path) -> dict:
               "by_timing": {timing: {condition: condition_statistics(
                   [case for case in cases if case["condition"] == condition and case["timing"] == timing], planned)
                   for condition in CONDITIONS} for timing, _ in TIMINGS}}
+    report["terminal_checks"] = {
+        "enabled": terminal_enabled, "expected": planned * 10 if terminal_enabled else 0,
+        "recorded": len(terminal_results),
+        "missing": max(0, planned * 10 - len(terminal_results)) if terminal_enabled else 0,
+        "evaluated": sum(item["evaluated"] for item in terminal_results),
+        "passed_episodes": sum(item["passed"] for item in terminal_results),
+        "semantic_successes": sum(item["semantic_success"] is True for item in terminal_results),
+        "passed": bool(terminal_enabled and report["passed"] and len(terminal_results) == planned * 10
+                       and all(item["passed"] for item in terminal_results)),
+        "failed_episodes": [item for item in terminal_results if not item["passed"]],
+    }
+    report["terminal_protocol_passed"] = acceptance_passed(report) if terminal_enabled else None
     write_json(output / "summary.json", report)
     columns = list(dict.fromkeys(key for item in cases for key in item))
     with (output / "cases.csv").open("w", encoding="utf-8", newline="") as stream:
@@ -402,6 +536,9 @@ def summarize(output: Path) -> dict:
         writer.writerows(cases)
     print(f"Tasks {report['passed_tasks']}/{planned}; pairs {report['passed_pairs']}/{planned * 3}; "
           f"negative controls {report['passed_negative_controls']}/{planned * 3}; input errors: {global_errors}")
+    if terminal_enabled:
+        print(f"Terminal protocol passed: {report['terminal_protocol_passed']}; "
+              f"episodes accepted: {report['terminal_checks']['passed_episodes']}/{planned * 10}")
     return report
 
 
@@ -436,6 +573,9 @@ def main() -> int:
     preparation.add_argument("--count", type=int, default=10)
     preparation.add_argument("--seed", type=int, default=20261026)
     preparation.add_argument("--max-attempts", type=int, default=5000)
+    deriving = commands.add_parser("derive-facing", help="CPU: preserve a frozen dataset and add terminal facing/instance diagnostics")
+    deriving.add_argument("--source-dir", type=Path, required=True)
+    deriving.add_argument("--min-pixels", type=int, default=64)
     running = commands.add_parser("run", help="GPU children: reference + three control/follow/ignore sets")
     running.add_argument("--gpu-id", type=int, default=0)
     commands.add_parser("summarize", help="CPU only: recompute all conditions, including missing/failed cases")
@@ -452,9 +592,13 @@ def main() -> int:
         if args.gpu_id < 0:
             parser.error("--gpu-id must be non-negative")
         return run(args)
+    if args.command == "derive-facing":
+        if args.min_pixels < 1:
+            parser.error("--min-pixels must be positive")
+        return derive_facing(args)
     if args.command == "videos":
         return videos(args)
-    return 0 if summarize(args.output_dir.resolve())["passed"] else 1
+    return 0 if acceptance_passed(summarize(args.output_dir.resolve())) else 1
 
 
 if __name__ == "__main__":

@@ -25,7 +25,7 @@ def check_scene_match(config: dict, reference: dict) -> None:
     if navmesh_path(config) != navmesh_path(reference):
         raise ValueError("Reference scene configuration differs: navmesh")
     for key, default in (("scene_id", None), ("agent_height", 1.5), ("agent_radius", 0.1),
-                         ("semantic_sensor", False)):
+                         ("semantic_sensor", False), ("terminal_alignment", None), ("terminal_visibility", None)):
         if config.get(key, default) != reference.get(key, default):
             raise ValueError(f"Reference scene configuration differs: {key}")
     for key in ("navmesh_sha256", "scene_sha256", "scene_dataset_config_sha256", "dataset_revision"):

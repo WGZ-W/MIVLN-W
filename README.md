@@ -154,6 +154,17 @@ reference plus early/middle/late control/follow/ignore conditions (100 episodes)
 See [`docs/hssd_semantic_dataset.md`](docs/hssd_semantic_dataset.md) for versioned
 review decisions, preparation, batch execution, failure accounting, and summaries.
 
+To compare terminal facing against an existing frozen collection without resampling:
+
+```bash
+python -m scripts.hssd_dataset derive-facing --source-dir outputs/hssd_dataset_001 --output-dir outputs/hssd_dataset_facing_001
+```
+
+This opt-in variant turns toward the policy's object before STOP and evaluates
+instance visibility separately from point-goal success. Use its `smoke_config.json`
+first; see [`docs/hssd_terminal_facing.md`](docs/hssd_terminal_facing.md). The original
+collection and its success definition remain unchanged.
+
 ## Project layout
 
 ```text

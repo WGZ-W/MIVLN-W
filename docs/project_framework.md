@@ -1,6 +1,6 @@
 # MI-VLN 项目整体框架与实施路线
 
-更新时间：2026-10-26。本文依据当前代码、配置和本地实验产物整理，区分“已有实现”“已经运行验证”和“后续设计”，作为现阶段的项目导航文档。本文不修改既有任务规范；未来新增规则仍需更新规范、代码和测试。
+更新时间：2026-10-27。本文依据当前代码、配置和本地实验产物整理，区分“已有实现”“已经运行验证”和“后续设计”，作为现阶段的项目导航文档。本文不修改既有任务规范；未来新增规则仍需更新规范、代码和测试。
 
 ## 1. 项目最终要解决什么问题
 
@@ -51,9 +51,10 @@
 | 忽略介入负对照 | 单例已运行 | `outputs/ignore_intervention_001/negative_check.json`：验收通过、任务按预期失败 |
 | HSSD 完整场景加载 | 已运行 | `outputs/hssd_smoke_001/metrics.json`：`success: true` |
 | HSSD 语义目标导航及三种对照 | 单任务三档时机已运行 | `outputs/hssd_timing_001/summary.json`：3 组配对通过；早/晚 Ignore 在 timing 子目录，中期在 `outputs/hssd_ignore_intervention_001/`，均按预期失败 |
-| HSSD 语义多任务管线 | 已实现，真实批量导航未运行 | `hssd_targets` 管理审核，`hssd_dataset` 冻结和运行三条件；4 个真实目标候选仍待新预览和显式审核 |
+| HSSD 语义多任务管线 | 真实点协议已验收 | 5 类目标、10 个任务、100 个 episode；30 组配对和 30 个负对照全部通过 |
+| 终点朝向与实例可见性 | 已实现，新 GPU 实验待运行 | 同一批任务已派生到 facing 目录；保留旧点指标，新增独立实例诊断 |
 | 语言理解策略、禁区、子任务恢复 | 尚未实现 | 不属于当前实验结论 |
-| 自动测试 | 当前 64 项通过 | 在 `habitat` 环境运行测试；测试不启动 GPU 模拟器 |
+| 自动测试 | 当前 73 项通过 | 在 `habitat` 环境运行测试；测试不启动 GPU 模拟器 |
 
 ### 3.1 已有调试实验说明了什么
 
@@ -77,8 +78,11 @@ HSSD 首次实际导航已成功：46 个动作，到床 A 配置停止点的误
 三档 Ignore 都继续停在已取消的床 A，并正确判失败。已核对位姿连续性、原始观测前缀和终点关键帧；
 不能据此宣称已人工看完全部视频、完成多任务泛化或实现语言理解。
 
-新增 `outputs/hssd_catalog_001/catalog.json` 包含 3 张床和 1 个沙发的几何候选，状态全部为 pending。
-CPU 几何试采样能够构造 10 个任务，但没有保存为正式数据集；必须先完成四目标预览及至少三个实例的显式审核。
+扩展目录中，金属床、独立浴缸、厨房岛台、沙发和餐桌五类实例已显式审核，
+`outputs/hssd_dataset_001/` 的 10 个任务、100 个 episode 已完成点协议验收，包含 6147 组观测、0 个碰撞标记。
+70 条正常条件成功，30 条 Ignore 按预期失败。3 条 Follow 终帧没有沙发（task_001 early/middle、task_004 late），
+因此不能宣称终点可见性全部通过。新增 facing 变体在不重采样任务、不改写旧结果的前提下修正终点朝向，
+并用临时实例标签独立诊断可见性；该新变体的 GPU 效果尚待验证。
 
 ## 4. 总体系统架构
 
@@ -245,13 +249,14 @@ SPL 不是精确终点到达的证明：停止容差可能使实走距离小于�
 
 **通过条件**：控制到 A 成功；follow 从当前状态转到 B 成功；ignore 停在已取消的 A 并被判失败；事件准确投递，位姿和历史连续，实际任务配置一致，目标可见性与语言描述已人工确认。
 
-### P2：HSSD 小规模语义调试集——当前最高优先级
+### P2：HSSD 小规模语义调试集——点协议已通过，终点可见性待验证
 
 相关入口已实现：`scripts.hssd_targets` 生成候选、GPU 预览与版本化审核决定，`scripts.hssd_dataset` 只使用获批实例生成固定任务。
-先完成候选的视觉审核，再以 10 个任务为首批，按 1 条参考加三档三条件规划 100 个 episode；
-后续可扩至 20 个任务。配置哈希、稳定实例引用、三条件验收和失败分母均固定。
-当前真实多任务 GPU 实验未运行，不能把模拟器替身测试或 CPU 试采样写成实验成功。
+首批 5 类目标已审核，10 个任务按 1 条参考加三档三条件完成真实 100 个 episode；
+配置哈希、稳定实例引用、三条件验收和失败分母均固定。
+当前先完善终点朝向和独立可见性诊断，再决定扩充任务或场景；73 项 CPU 测试不等于新变体 GPU 实验通过。
 详细步骤见 [HSSD 多任务语义实验](hssd_semantic_dataset.md)。
+新变体步骤见 [终点朝向与实例可见性](hssd_terminal_facing.md)。
 
 ### P3：实现其余两类介入
 
@@ -293,7 +298,7 @@ Linux 服务器负责仿真与实验。延续当前协作方式：代码与 CPU 
 
 ## 12. 常用命令与现有文档索引
 
-以下命令均已存在；仿真命令由使用者选择分配的 GPU 执行。输出目录必须是新的。单任务三条件已完成；当前优先执行四目标预览和审核，之后才能准备真实的多任务数据集。
+以下命令均已存在；仿真命令由使用者选择分配的 GPU 执行。输出目录必须是新的。多任务点协议已完成；当前优先执行新 facing 变体的 smoke test，通过后再跑其完整批次。
 
 ```bash
 # 在项目根目录、合适的 Python 环境中执行。
@@ -311,8 +316,8 @@ python -m scripts.run_navigation --config configs/simulator/hssd_navigation_001.
 # 已完成坐标调试实验的离线汇总，不启动模拟器。
 python -m scripts.debug_dataset summarize --output-dir outputs/debug_dataset_001
 
-# 新目标目录已完成 CPU 候选生成，下一步执行预览，不会自动批准目标。
-python -m scripts.hssd_targets preview --catalog outputs/hssd_catalog_001/catalog.json --output-dir outputs/hssd_catalog_preview_001 --gpu-id 0
+# 同一批任务已完成 CPU 派生，下一步先验证新终点策略的两分支 smoke test。
+python -m scripts.run_intervention --config outputs/hssd_dataset_facing_001/smoke_config.json --gpu-id 0 --output-dir outputs/hssd_facing_smoke_001 --no-video
 ```
 
 相关依据：
@@ -323,6 +328,7 @@ python -m scripts.hssd_targets preview --catalog outputs/hssd_catalog_001/catalo
 - [HSSD 检查指南](hssd_scene_check.md)：当前家庭场景接入状态与运行方法。
 - [HSSD 首个实际导航](hssd_navigation_001.md)：入口配置、执行命令与 STOP 验收标准。
 - [HSSD 多任务语义实验](hssd_semantic_dataset.md)：候选、预览、人工审核、固定采样与三条件汇总。
+- [终点朝向与实例可见性](hssd_terminal_facing.md)：新旧任务配对、真实转向和独立终点诊断。
 - [组会汇报](group_meeting_presentation_2026-10-23.md)、[周报](weekly_report_2026-10-22.md)：阶段性汇报，时间早于本文部分检查结果。
 
-**当前下一步结论：单任务三条件已通过，先完成新增目标审核和 10 个固定 HSSD 语义任务的真实批量验证，再扩展任务类型、语言方法和场景规模；不要把 Oracle 单例成功提前表述为完成 MI-VLN Benchmark。**
+**当前下一步结论：10 任务点协议已通过，先验证终点朝向与实例可见性的新变体，再扩展任务类型、语言方法和场景规模；不要将 Oracle 停止点成功提前表述为完整语义导航成功或完成 MI-VLN Benchmark。**

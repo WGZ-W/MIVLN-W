@@ -19,6 +19,7 @@ from mivln import EpisodeEvaluator, EventEngine, InterventionEvent, TaskState
 from scripts.check_habitat import PROJECT_ROOT, pose, write_json
 from scripts.export_video import export_video, find_ffmpeg
 from scripts.navigation_scene import navmesh_path, project_path
+from scripts import terminal_view
 
 
 def make_configuration(config: dict, scene: Path, gpu_id: int) -> habitat_sim.Configuration:
@@ -184,6 +185,7 @@ def validate_config(config: dict) -> None:
         if not np.isfinite(config[name]) or config[name] <= 0:
             raise ValueError(f"{name} must be finite and positive")
     goals = configured_goals(config)
+    terminal_view.validate(config, goals)
     for name, position in [("start_position", config["start_position"]), *goals.items()]:
         value = np.asarray(position, dtype=float)
         if value.shape != (3,) or not np.isfinite(value).all():
@@ -245,6 +247,10 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
             loaded_objects = len(sim.get_rigid_object_manager().get_object_handles())
             if loaded_objects != provenance["expected_rigid_objects"]:
                 raise RuntimeError("Loaded rigid object count does not match the configured HSSD scene instance")
+        align_terminal = terminal_view.enabled(config, "terminal_alignment")
+        diagnose_terminal = terminal_view.enabled(config, "terminal_visibility")
+        target_instances = (terminal_view.resolve_instances(sim, scene, config["goal_metadata"])
+                            if align_terminal or diagnose_terminal else {})
         sim.pathfinder.seed(config["seed"])
         start = np.asarray(config["start_position"], dtype=np.float32)
         goal = goals[policy_state.active_goal]
@@ -305,6 +311,9 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
         first_compliant_action_step = None
         post_intervention_optimal_length = None
         pre_intervention_path_length = None
+        alignment_turns = 0
+        alignment_goal = policy_state.active_goal
+        turns_for_goal = 0
         for step in range(config["max_steps"]):
             # Events update task state between actions. The simulator and agent
             # stay alive; recreating a follower clears only its planner state.
@@ -347,6 +356,21 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
                 termination = "planner_error"
                 planner_error = str(error) or type(error).__name__
                 break
+            controller_phase = "navigate"
+            if policy_state.active_goal != alignment_goal:
+                alignment_goal, turns_for_goal = policy_state.active_goal, 0
+            if align_terminal and action == "STOP":
+                # Use policy state, NOT evaluator truth. Ignore must face the old
+                # object just as its no-event control does, rather than leak B.
+                action, _ = terminal_view.yaw_action(agent.get_state(), target_instances[alignment_goal]["world_center"],
+                    config["terminal_alignment"].get("yaw_tolerance_degrees", 7.5))
+                controller_phase = "stop" if action == "STOP" else "terminal_align"
+                if action != "STOP":
+                    if turns_for_goal >= config["terminal_alignment"].get("max_turn_actions", 24):
+                        termination = "terminal_alignment_failed"
+                        break
+                    turns_for_goal += 1
+                    alignment_turns += 1
             # This is the Oracle's first action planned for the updated target;
             # it measures planner compliance, not learned language understanding.
             if (intervention_step is not None and first_compliant_action_step is None
@@ -377,6 +401,7 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
                                              if policy_remaining is not None else None),
                 "delivered_event_ids": [event.event_id for event in delivered],
                 "frames": save_frame(output, step + 1, observations, config.get("semantic_sensor", False)),
+                **({"controller_phase": controller_phase} if align_terminal else {}),
             })
             if stopped:
                 termination = "stopped"
@@ -394,6 +419,27 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
             path_length=path_length, steps=len(trajectory) - 1, max_steps=config["max_steps"],
         )
         success = evaluated.dynamic_success
+        terminal_report = {"evaluated": False, "error": None}
+        if diagnose_terminal:
+            try:
+                terminal_report, instance_mask, terminal_rgb = terminal_view.measure_visibility(
+                    sim, agent, target_instances[task_state.active_goal], config["terminal_visibility"].get("min_pixels", 64))
+                terminal_report["goal_id"] = task_state.active_goal
+                np.save(output / "terminal_instance_mask.npy", instance_mask)
+                Image.fromarray(instance_mask.astype(np.uint8) * 255).save(output / "terminal_instance_mask.png")
+                Image.fromarray(terminal_rgb).save(output / "terminal_rgb.png")
+                terminal_report["files"] = [{"path": name, "sha256": hashlib.sha256((output / name).read_bytes()).hexdigest()}
+                                            for name in ("terminal_instance_mask.npy", "terminal_instance_mask.png", "terminal_rgb.png")]
+            except Exception as error:
+                # Diagnostic failure is not silently treated as invisibility or
+                # allowed to rewrite the already computed point-goal result.
+                terminal_report = {"evaluated": False, "goal_id": task_state.active_goal,
+                                   "error": f"{type(error).__name__}: {error}"}
+            write_json(output / "terminal_diagnostics.json", terminal_report)
+        yaw_error = None
+        if align_terminal:
+            _, yaw_error = terminal_view.yaw_action(agent.get_state(), target_instances[policy_state.active_goal]["world_center"],
+                                                  config["terminal_alignment"].get("yaw_tolerance_degrees", 7.5))
         if stopped and not success:
             termination = ("stopped_at_cancelled_goal" if evaluated.stopped_goal in task_state.cancelled_goals
                            else "stopped_outside_goal")
@@ -428,6 +474,19 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
             "scene_id": config.get("scene_id"), "scene_provenance": provenance,
             "navmesh_settings": mesh_settings, "loaded_rigid_objects": loaded_objects,
             "goal_evaluation": "STOP within geodesic success radius of a configured point; not object-instance visibility",
+            "point_goal_success": bool(success),
+            "terminal_alignment_turns": alignment_turns,
+            "terminal_yaw_error_degrees": yaw_error,
+            "terminal_alignment_complete": (bool(stopped and abs(yaw_error) <=
+                config["terminal_alignment"].get("yaw_tolerance_degrees", 7.5) + 1e-5) if align_terminal else None),
+            "terminal_visibility_evaluated": terminal_report["evaluated"],
+            "terminal_instance_visible": terminal_report.get("instance_visible"),
+            "terminal_instance_pixels": terminal_report.get("instance_pixels"),
+            "terminal_semantic_success": (bool(success and terminal_report["instance_visible"])
+                                          if terminal_report["evaluated"] else None),
+            "terminal_diagnostic_error": terminal_report.get("error"),
+            "terminal_diagnostics_sha256": (hashlib.sha256((output / "terminal_diagnostics.json").read_bytes()).hexdigest()
+                                             if diagnose_terminal else None),
         }
         write_json(output / "trajectory.json", trajectory)
         write_json(output / "events.json", event_log)
