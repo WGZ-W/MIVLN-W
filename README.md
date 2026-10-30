@@ -165,6 +165,58 @@ instance visibility separately from point-goal success. Use its `smoke_config.js
 first; see [`docs/hssd_terminal_facing.md`](docs/hssd_terminal_facing.md). The original
 collection and its success definition remain unchanged.
 
+## Experimental avoid-region intervention
+
+The next single-case entry preserves the original goal while adding one forbidden
+floor region. Preparation uses CPU mesh queries; execution runs matched control,
+follow, and Ignore branches on the assigned GPU:
+
+```bash
+python -m scripts.avoid_region prepare --reference-dir outputs/hssd_dataset_facing_001/tasks/task_001/reference --output-dir outputs/hssd_avoid_prepare_002
+python -m scripts.avoid_region run --config outputs/hssd_avoid_prepare_002/config.json --gpu-id 0 --output-dir outputs/hssd_avoid_001
+python -m scripts.avoid_region summarize --output-dir outputs/hssd_avoid_001
+```
+
+Preparation `_002` already exists locally; skip its command for this run. Ignore
+must reach the same goal but fail because its executed path violates the newly
+effective constraint. The single-case GPU experiment has passed. This remains a
+privileged geometry experiment. See [`docs/avoid_region.md`](docs/avoid_region.md)
+for boundary semantics, planner limitations, metrics and video commands.
+
+For the fixed 10-task collection, `scripts.avoid_dataset` preserves preparation
+failures and all 30 planned episode slots, and independently audits raw evidence:
+
+```bash
+python -m scripts.avoid_dataset prepare --source-dir outputs/hssd_dataset_facing_001 --output-dir outputs/hssd_avoid_batch_001
+python -m scripts.avoid_dataset run --output-dir outputs/hssd_avoid_batch_001 --gpu-id 0
+python -m scripts.avoid_dataset summarize --output-dir outputs/hssd_avoid_batch_001
+python -m scripts.avoid_dataset videos --output-dir outputs/hssd_avoid_batch_001
+```
+
+The local batch is complete: 10/10 tasks and all 30 episodes passed their acceptance
+checks, with 20 normal-condition successes and 10 expected Ignore failures. All 30
+videos have been exported. The commands above document the workflow; use a fresh
+directory when repeating an experiment. See [`docs/avoid_dataset.md`](docs/avoid_dataset.md)
+for failure accounting and [`the acceptance record`](docs/hssd_avoid_results_2026-10-29.md)
+for measured results and next steps.
+
+## Experimental temporary subgoal and resumption
+
+`scripts.subgoal` keeps original goal A suspended while visiting B, then restores
+A. It introduces a counted logical `COMPLETE_SUBGOAL` action with independent
+distance, heading and instance evidence; final `STOP` still ends the episode.
+The fixed single-case preparation already exists locally:
+
+```bash
+python -m scripts.subgoal run --config outputs/hssd_subgoal_prepare_001/config.json --gpu-id 0 --output-dir outputs/hssd_subgoal_001
+python -m scripts.subgoal summarize --output-dir outputs/hssd_subgoal_001
+```
+
+Control reaches A, Follow completes B then stops at A, and Ignore reaches A but
+fails the missing-B requirement. CPU tests and native navigation checks pass;
+GPU acceptance is pending. See [`docs/subgoal.md`](docs/subgoal.md) for preparation,
+the explicit action extension, truth/policy separation and stage evidence.
+
 ## Project layout
 
 ```text

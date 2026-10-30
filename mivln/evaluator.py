@@ -37,6 +37,8 @@ class EpisodeEvaluator:
         path_length: float,
         steps: int,
         max_steps: int,
+        constraint_violation_count: int | None = None,
+        subgoal_sequence_satisfied: bool | None = None,
     ) -> EpisodeMetrics:
         """Ground STOP in measured geodesic distances, not the policy's goal label.
 
@@ -65,6 +67,8 @@ class EpisodeEvaluator:
             path_length=path_length,
             steps=steps,
             max_steps=max_steps,
+            constraint_violation_count=constraint_violation_count,
+            subgoal_sequence_satisfied=subgoal_sequence_satisfied,
         )
 
     def evaluate(
@@ -77,13 +81,30 @@ class EpisodeEvaluator:
         path_length: float,
         steps: int,
         max_steps: int,
+        constraint_violation_count: int | None = None,
+        subgoal_sequence_satisfied: bool | None = None,
     ) -> EpisodeMetrics:
         """Evaluate an episode against the structured final task state."""
 
+        # Constraints require an independently measured trajectory result. Never
+        # silently accept a point-goal success when the caller omitted this check.
+        if constraint_violation_count is None:
+            if task_state.active_constraints:
+                raise ValueError("Active constraints require a measured violation count")
+            constraint_violation_count = 0
+        if type(constraint_violation_count) is not int or constraint_violation_count < 0:
+            raise ValueError("constraint_violation_count must be a non-negative integer")
+        if subgoal_sequence_satisfied is None:
+            if task_state.suspended_goals or task_state.completed_subgoals:
+                raise ValueError("Subgoal tasks require independently measured sequence completion")
+            subgoal_sequence_satisfied = True
+        if type(subgoal_sequence_satisfied) is not bool:
+            raise ValueError("subgoal_sequence_satisfied must be boolean")
         intervention_received = intervention_step is not None
         compliance = stopped_goal == task_state.active_goal
         within_budget = steps <= max_steps
-        dynamic_success = bool(stopped_goal) and compliance and within_budget
+        dynamic_success = (bool(stopped_goal) and compliance and within_budget and constraint_violation_count == 0
+                           and subgoal_sequence_satisfied and not task_state.suspended_goals)
 
         latency: int | None = None
         if intervention_received and first_compliant_action_step is not None:

@@ -91,3 +91,20 @@ The negative-control acceptance procedure is documented in `docs/ignore_interven
 - end-to-end VLN training;
 - live human-in-the-loop interfaces.
 
+## Separate experimental extension
+
+The `add_avoid_region_v1` experiment adds one floor constraint while preserving
+the active goal. Its joint success additionally requires no post-delivery
+trajectory violations; point completion remains a separate metric. This does
+not redefine the historical v0.1 goal-replacement results. See
+[avoid-region protocol and entry](avoid_region.md) for coordinates, boundary
+semantics, three-condition acceptance and current CPU/GPU validation status.
+
+The separate `insert_subgoal_v1` protocol suspends A, completes temporary B with
+a counted logical `COMPLETE_SUBGOAL` action, then restores A and requires final
+STOP there. Completion needs measured distance, heading and instance visibility;
+policy intent alone cannot advance evaluator truth. This is an explicit action
+extension, not a change to historical v0.1 STOP behavior. See
+[subgoal insertion and resumption](subgoal.md); CPU validation is complete and
+the first GPU three-condition experiment is pending.
+
