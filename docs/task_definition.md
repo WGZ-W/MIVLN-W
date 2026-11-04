@@ -105,6 +105,10 @@ a counted logical `COMPLETE_SUBGOAL` action, then restores A and requires final
 STOP there. Completion needs measured distance, heading and instance visibility;
 policy intent alone cannot advance evaluator truth. This is an explicit action
 extension, not a change to historical v0.1 STOP behavior. See
-[subgoal insertion and resumption](subgoal.md); CPU validation is complete and
-the first GPU three-condition experiment is pending.
+[subgoal insertion and resumption](subgoal.md); the single-case GPU three-condition
+experiment has passed independent acceptance. Fixed-task and early/middle/late
+batches of 30/90 GPU episodes have also passed independent re-audit; a historical
+displacement rejection required exact native-action projection evidence, while
+original process status remains preserved. See [batch acceptance and commands](subgoal_dataset.md)
+and [measured results and audit correction](hssd_subgoal_results_2026-11-03.md).
 

@@ -205,17 +205,26 @@ for measured results and next steps.
 `scripts.subgoal` keeps original goal A suspended while visiting B, then restores
 A. It introduces a counted logical `COMPLETE_SUBGOAL` action with independent
 distance, heading and instance evidence; final `STOP` still ends the episode.
-The fixed single-case preparation already exists locally:
+The single-case and ten-task early/middle/late GPU experiments have passed
+independent acceptance locally. Existing results can be re-audited on CPU:
 
 ```bash
-python -m scripts.subgoal run --config outputs/hssd_subgoal_prepare_001/config.json --gpu-id 0 --output-dir outputs/hssd_subgoal_001
-python -m scripts.subgoal summarize --output-dir outputs/hssd_subgoal_001
+python -m scripts.subgoal_dataset summarize --output-dir outputs/hssd_subgoal_batch_001
+python -m scripts.subgoal_dataset summarize --output-dir outputs/hssd_subgoal_timing_001
 ```
 
 Control reaches A, Follow completes B then stops at A, and Ignore reaches A but
-fails the missing-B requirement. CPU tests and native navigation checks pass;
-GPU acceptance is pending. See [`docs/subgoal.md`](docs/subgoal.md) for preparation,
-the explicit action extension, truth/policy separation and stage evidence.
+fails the missing-B requirement. All ten early cases (30 episodes) and thirty
+early/middle/late cases (90 episodes) passed re-audit, and all 120 videos were exported.
+A historical displacement-audit rejection was resolved by an exact native
+navmesh action replay; original exit codes and failed summaries are preserved.
+The batch keeps preparation failures,
+missing episodes and failed child processes in its denominators and independently
+replays raw evidence. See [`docs/subgoal.md`](docs/subgoal.md) for the single-case
+protocol and [`docs/subgoal_dataset.md`](docs/subgoal_dataset.md) for the batch,
+negative tests, commands and complete stage acceptance criteria. Measured results,
+the audit correction and remaining manual video review are documented in
+[`the acceptance report`](docs/hssd_subgoal_results_2026-11-03.md).
 
 ## Project layout
 
