@@ -1,4 +1,4 @@
-"""Run an Oracle navigation episode with optional target-replacement events."""
+"""Run an Oracle episode with optional goal replacement or one avoid region."""
 
 from __future__ import annotations
 
@@ -20,6 +20,9 @@ from scripts.check_habitat import PROJECT_ROOT, pose, write_json
 from scripts.export_video import export_video, find_ffmpeg
 from scripts.navigation_scene import navmesh_path, project_path
 from scripts import terminal_view
+from mivln.regions import trajectory_violations
+from scripts.avoid_planner import AvoidFollower, AvoidPlanningError, validate_settings
+from mivln.subgoals import COMPLETE_SUBGOAL, completion_is_valid, sequence_satisfied
 
 
 def make_configuration(config: dict, scene: Path, gpu_id: int) -> habitat_sim.Configuration:
@@ -185,6 +188,8 @@ def validate_config(config: dict) -> None:
         if not np.isfinite(config[name]) or config[name] <= 0:
             raise ValueError(f"{name} must be finite and positive")
     goals = configured_goals(config)
+    if "avoid_planner" in config:
+        validate_settings(config)
     terminal_view.validate(config, goals)
     for name, position in [("start_position", config["start_position"]), *goals.items()]:
         value = np.asarray(position, dtype=float)
@@ -197,14 +202,30 @@ def validate_config(config: dict) -> None:
     if not isinstance(events, list) or len(events) > 1:
         raise ValueError("Version 0.1 supports zero or one intervention")
     state = TaskState(active_goal=config["initial_goal"])
+    protocol = config.get("subgoal_protocol")
+    if protocol is not None:
+        if (not isinstance(protocol, dict) or protocol.get("enabled") is not True
+                or protocol.get("completion_action") != COMPLETE_SUBGOAL):
+            raise ValueError("subgoal_protocol requires enabled=true and completion_action=COMPLETE_SUBGOAL")
+        if not (terminal_view.enabled(config, "terminal_alignment") and terminal_view.enabled(config, "terminal_visibility")):
+            raise ValueError("Subgoal completion requires terminal facing and instance visibility")
     for value in events:
         event = InterventionEvent.from_dict(value)
         if type(event.trigger_step) is not int or event.trigger_step >= config["max_steps"]:
             raise ValueError("Event trigger must be an integer within the action budget")
         old_goal = state.active_goal
         state.apply_update(event.task_update)
-        if state.active_goal not in goals or state.active_goal == old_goal:
-            raise ValueError("Intervention must select a different, configured goal")
+        if event.task_update["operation"] in ("replace_goal", "insert_subgoal"):
+            if state.active_goal not in goals or state.active_goal == old_goal:
+                raise ValueError("Intervention must select a different, configured goal")
+            if event.task_update["operation"] == "insert_subgoal" and protocol is None:
+                raise ValueError("insert_subgoal requires the explicit subgoal_protocol")
+        else:
+            validate_settings(config)
+            if state.active_goal != old_goal:
+                raise ValueError("Avoid intervention must preserve the active goal")
+        if protocol is not None and event.task_update["operation"] != "insert_subgoal":
+            raise ValueError("Do not mix the subgoal protocol with other update operations")
 
 
 def path_record(path, start, goal, goal_id: str, step=None) -> dict:
@@ -214,6 +235,28 @@ def path_record(path, start, goal, goal_id: str, step=None) -> dict:
         "distance_m": float(path.geodesic_distance),
         "points": [np.asarray(point).tolist() for point in path.points],
     }
+
+
+def save_instance_diagnostic(output, sim, agent, target, goal_id, min_pixels):
+    """Save independent observation evidence, restoring labels before any action.
+
+    Shared by final STOP and intermediate completion; the filename/schema stays
+    compatible with the old terminal auditor. Failures remain evaluated=false,
+    not invisible=false, and cannot be used to grant a subgoal completion.
+    """
+    output.mkdir(parents=True, exist_ok=True)
+    try:
+        report, instance_mask, rgb = terminal_view.measure_visibility(sim, agent, target, min_pixels)
+        report["goal_id"] = goal_id
+        np.save(output/"terminal_instance_mask.npy", instance_mask)
+        Image.fromarray(instance_mask.astype(np.uint8)*255).save(output/"terminal_instance_mask.png")
+        Image.fromarray(rgb).save(output/"terminal_rgb.png")
+        report["files"] = [{"path": name, "sha256": hashlib.sha256((output/name).read_bytes()).hexdigest()}
+                           for name in ("terminal_instance_mask.npy", "terminal_instance_mask.png", "terminal_rgb.png")]
+    except Exception as error:
+        report = {"evaluated": False, "goal_id": goal_id, "error": f"{type(error).__name__}: {error}"}
+    write_json(output/"terminal_diagnostics.json", report)
+    return report
 
 
 def run(config: dict, scene: Path, gpu_id: int, output: Path,
@@ -260,7 +303,9 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
             if not sim.pathfinder.is_navigable(position) or shortest_path(sim.pathfinder, start, position) is None:
                 raise ValueError(f"Goal is not navigable and reachable from the start: {goal_id}")
         for event in events:
-            replacement = goals[event.task_update["new_goal"]]
+            if event.task_update["operation"] not in ("replace_goal", "insert_subgoal"):
+                continue
+            replacement = goals[event.task_update.get("new_goal", event.task_update.get("subgoal"))]
             separation = shortest_path(sim.pathfinder, goal, replacement)
             if separation is None or separation.geodesic_distance <= 2 * config["success_radius_m"]:
                 raise ValueError("Old and new goals must have separate, reachable success regions")
@@ -314,6 +359,10 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
         alignment_turns = 0
         alignment_goal = policy_state.active_goal
         turns_for_goal = 0
+        avoid_experiment = any(event.task_update["operation"] == "add_avoid_region" for event in events)
+        subgoal_protocol = config.get("subgoal_protocol") is not None
+        inserted_goal = (events[0].task_update["subgoal"] if subgoal_protocol and events else None)
+        subgoal_completions = []
         for step in range(config["max_steps"]):
             # Events update task state between actions. The simulator and agent
             # stay alive; recreating a follower clears only its planner state.
@@ -344,15 +393,23 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
                 pre_intervention_path_length = path_length
                 if intervention_policy == "follow":
                     goal = goals[policy_state.active_goal]
-                    replans.append(path_record(updated_path, agent.get_state().position, goal,
-                                               policy_state.active_goal, step))
-                    follower = habitat_sim.nav.GreedyGeodesicFollower(
-                        sim.pathfinder, agent, goal_radius=config["success_radius_m"], stop_key="STOP"
-                    )
+                    if policy_state.active_constraints:
+                        try:
+                            follower = AvoidFollower(sim, agent, goal, policy_state.active_constraints, config)
+                        except AvoidPlanningError as error:
+                            termination, planner_error = "avoid_planner_error", str(error)
+                            break
+                        replans.append({"step": step, "goal_id": policy_state.active_goal, **follower.route})
+                    else:
+                        replans.append(path_record(updated_path, agent.get_state().position, goal,
+                                                   policy_state.active_goal, step))
+                        follower = habitat_sim.nav.GreedyGeodesicFollower(
+                            sim.pathfinder, agent, goal_radius=config["success_radius_m"], stop_key="STOP"
+                        )
             previous_position = agent.get_state().position.copy()
             try:
                 action = follower.next_action_along(goal)
-            except habitat_sim.errors.GreedyFollowerError as error:
+            except (habitat_sim.errors.GreedyFollowerError, AvoidPlanningError) as error:
                 termination = "planner_error"
                 planner_error = str(error) or type(error).__name__
                 break
@@ -374,12 +431,54 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
             # This is the Oracle's first action planned for the updated target;
             # it measures planner compliance, not learned language understanding.
             if (intervention_step is not None and first_compliant_action_step is None
-                    and policy_state.active_goal == task_state.active_goal):
+                    and intervention_policy == "follow"
+                    and policy_state.to_dict() == task_state.to_dict()):
                 first_compliant_action_step = step
+            if action == "STOP" and subgoal_protocol and policy_state.suspended_goals:
+                # The follower requests a local stop at B; the protocol exposes a
+                # distinct counted logical action instead of ending the episode.
+                # Policy intent always resumes A. Evaluator truth resumes ONLY
+                # after measured distance/yaw/instance evidence independently pass.
+                action, controller_phase = COMPLETE_SUBGOAL, "subgoal_complete"
+                completing_goal = policy_state.active_goal
+                before_truth, before_belief = task_state.to_dict(), policy_state.to_dict()
+                completion_pose_before = pose(agent)
+                measured = shortest_path(sim.pathfinder, agent.get_state().position, goals[completing_goal])
+                measured_distance = float(measured.geodesic_distance) if measured is not None else None
+                _, measured_yaw = terminal_view.yaw_action(agent.get_state(), target_instances[completing_goal]["world_center"],
+                    config["terminal_alignment"].get("yaw_tolerance_degrees", 7.5))
+                evidence_dir = output/"subgoals"/f"{step:06d}"
+                diagnostic = save_instance_diagnostic(evidence_dir, sim, agent, target_instances[completing_goal],
+                    completing_goal, config["terminal_visibility"].get("min_pixels", 64))
+                valid = completion_is_valid(measured_distance, config["success_radius_m"], measured_yaw,
+                    config["terminal_alignment"].get("yaw_tolerance_degrees", 7.5), diagnostic)
+                if valid and task_state.active_goal == completing_goal and task_state.suspended_goals:
+                    task_state.complete_subgoal(completing_goal)
+                policy_state.complete_subgoal(completing_goal)
+                subgoal_completions.append({"step": step, "goal_id": completing_goal, "valid": valid,
+                    "distance_m": measured_distance, "yaw_error_degrees": measured_yaw,
+                    "pose_before": completion_pose_before, "pose_after": pose(agent),
+                    "task_state_before": before_truth, "task_state_after": task_state.to_dict(),
+                    "policy_task_state_before": before_belief, "policy_task_state_after": policy_state.to_dict(),
+                    "diagnostic_dir": str(evidence_dir.relative_to(output)),
+                    "diagnostic_sha256": hashlib.sha256((evidence_dir/"terminal_diagnostics.json").read_bytes()).hexdigest()})
+                goal = goals[policy_state.active_goal]
+                resumed_path = shortest_path(sim.pathfinder, agent.get_state().position, goal)
+                if resumed_path is None:
+                    termination, planner_error = "resumed_goal_unreachable", "No path to suspended goal"
+                    # Still record the counted completion action before failing.
+                else:
+                    replans.append({**path_record(resumed_path, agent.get_state().position, goal, policy_state.active_goal, step),
+                                    "reason": "resume_goal"})
+                    follower = habitat_sim.nav.GreedyGeodesicFollower(
+                        sim.pathfinder, agent, goal_radius=config["success_radius_m"], stop_key="STOP")
             # Habitat-Sim has movement actions only. STOP terminates this episode
             # without moving the agent, and is counted as one action in the budget.
             if action == "STOP":
                 stopped = True
+                collided = False
+            elif action == COMPLETE_SUBGOAL:
+                # No simulator step, physics advance, pose reset or terminal STOP.
                 collided = False
             else:
                 observations = sim.step(action)
@@ -406,42 +505,43 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
             if stopped:
                 termination = "stopped"
                 break
+            if planner_error is not None:
+                break
 
         distances = {}
         for goal_id, position in goals.items():
             remaining = shortest_path(sim.pathfinder, agent.get_state().position, position)
             distances[goal_id] = float(remaining.geodesic_distance) if remaining is not None else None
         final_distance = distances[task_state.active_goal]
+        violations = trajectory_violations(trajectory, config.get("agent_radius", .1))
+        measured_sequence = (sequence_satisfied(config["initial_goal"], inserted_goal, task_state, subgoal_completions)
+                             if inserted_goal is not None else True)
         evaluated = EpisodeEvaluator().evaluate_navigation(
             task_state=task_state, stopped=stopped, goal_distances_m=distances,
             success_radius_m=config["success_radius_m"], intervention_step=intervention_step,
             first_compliant_action_step=first_compliant_action_step,
             path_length=path_length, steps=len(trajectory) - 1, max_steps=config["max_steps"],
+            constraint_violation_count=len(violations),
+            subgoal_sequence_satisfied=measured_sequence if subgoal_protocol else None,
         )
         success = evaluated.dynamic_success
+        # Point completion and joint task success differ for Ignore: it may STOP
+        # at A while having violated the new constraint en route. Keep visibility
+        # orthogonal to that independent trajectory judgment.
+        point_success = bool(stopped and final_distance is not None and
+                             final_distance <= config["success_radius_m"] and len(trajectory) - 1 <= config["max_steps"])
         terminal_report = {"evaluated": False, "error": None}
         if diagnose_terminal:
-            try:
-                terminal_report, instance_mask, terminal_rgb = terminal_view.measure_visibility(
-                    sim, agent, target_instances[task_state.active_goal], config["terminal_visibility"].get("min_pixels", 64))
-                terminal_report["goal_id"] = task_state.active_goal
-                np.save(output / "terminal_instance_mask.npy", instance_mask)
-                Image.fromarray(instance_mask.astype(np.uint8) * 255).save(output / "terminal_instance_mask.png")
-                Image.fromarray(terminal_rgb).save(output / "terminal_rgb.png")
-                terminal_report["files"] = [{"path": name, "sha256": hashlib.sha256((output / name).read_bytes()).hexdigest()}
-                                            for name in ("terminal_instance_mask.npy", "terminal_instance_mask.png", "terminal_rgb.png")]
-            except Exception as error:
-                # Diagnostic failure is not silently treated as invisibility or
-                # allowed to rewrite the already computed point-goal result.
-                terminal_report = {"evaluated": False, "goal_id": task_state.active_goal,
-                                   "error": f"{type(error).__name__}: {error}"}
-            write_json(output / "terminal_diagnostics.json", terminal_report)
+            terminal_report = save_instance_diagnostic(output, sim, agent, target_instances[task_state.active_goal],
+                task_state.active_goal, config["terminal_visibility"].get("min_pixels", 64))
         yaw_error = None
         if align_terminal:
             _, yaw_error = terminal_view.yaw_action(agent.get_state(), target_instances[policy_state.active_goal]["world_center"],
                                                   config["terminal_alignment"].get("yaw_tolerance_degrees", 7.5))
         if stopped and not success:
-            termination = ("stopped_at_cancelled_goal" if evaluated.stopped_goal in task_state.cancelled_goals
+            termination = ("subgoal_sequence_incomplete" if inserted_goal is not None and not measured_sequence else
+                           "constraint_violation" if point_success and violations else
+                           "stopped_at_cancelled_goal" if evaluated.stopped_goal in task_state.cancelled_goals
                            else "stopped_outside_goal")
         post_spl = None
         post_length = None
@@ -456,7 +556,9 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
             "success_rate": float(success),
             # Ordinary SPL is meaningful only for the fixed-goal control.
             "spl": None if events else float(success) * optimal_length / max(optimal_length, path_length),
-            "post_intervention_spl": post_spl,
+            # An unconstrained geodesic is NOT the optimal constrained route.
+            # Until that optimum is defined, do not call this value avoid SPL.
+            "post_intervention_spl": None if avoid_experiment or subgoal_protocol else post_spl,
             "post_intervention_path_length_m": post_length,
             "post_intervention_shortest_path_length_m": post_intervention_optimal_length,
             "stopped": stopped, "termination": termination,
@@ -474,7 +576,7 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
             "scene_id": config.get("scene_id"), "scene_provenance": provenance,
             "navmesh_settings": mesh_settings, "loaded_rigid_objects": loaded_objects,
             "goal_evaluation": "STOP within geodesic success radius of a configured point; not object-instance visibility",
-            "point_goal_success": bool(success),
+            "point_goal_success": point_success,
             "terminal_alignment_turns": alignment_turns,
             "terminal_yaw_error_degrees": yaw_error,
             "terminal_alignment_complete": (bool(stopped and abs(yaw_error) <=
@@ -482,12 +584,29 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
             "terminal_visibility_evaluated": terminal_report["evaluated"],
             "terminal_instance_visible": terminal_report.get("instance_visible"),
             "terminal_instance_pixels": terminal_report.get("instance_pixels"),
-            "terminal_semantic_success": (bool(success and terminal_report["instance_visible"])
+            "terminal_semantic_success": (bool(point_success and terminal_report["instance_visible"])
                                           if terminal_report["evaluated"] else None),
             "terminal_diagnostic_error": terminal_report.get("error"),
             "terminal_diagnostics_sha256": (hashlib.sha256((output / "terminal_diagnostics.json").read_bytes()).hexdigest()
                                              if diagnose_terminal else None),
         }
+        if avoid_experiment or config.get("avoid_planner"):
+            metrics.update({"constraint_violation_count": len(violations),
+                            "constraint_compliance": not violations,
+                            "first_constraint_violation_step": violations[0]["step"] if violations else None,
+                            "constrained_semantic_success": (bool(success and terminal_report["instance_visible"])
+                                                             if terminal_report["evaluated"] else None)})
+            write_json(output / "constraint_violations.json", violations)
+        if subgoal_protocol:
+            root_distance = distances[config["initial_goal"]]
+            root_success = bool(stopped and root_distance is not None and root_distance <= config["success_radius_m"]
+                                and len(trajectory)-1 <= config["max_steps"])
+            metrics.update({"root_goal": config["initial_goal"], "root_goal_success": root_success,
+                            "required_sequence": [inserted_goal, config["initial_goal"]] if inserted_goal else [config["initial_goal"]],
+                            "subgoal_completed": bool(subgoal_completions and subgoal_completions[0]["valid"]),
+                            "resumed_original_goal": bool(inserted_goal and measured_sequence),
+                            "sequence_success": bool(measured_sequence and root_success and not violations)})
+            write_json(output/"subgoal_events.json", subgoal_completions)
         write_json(output / "trajectory.json", trajectory)
         write_json(output / "events.json", event_log)
         write_json(output / "replans.json", replans)
