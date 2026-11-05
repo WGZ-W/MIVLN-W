@@ -2,7 +2,7 @@
 
 检查日期：2026-11-05。结论：216 条真实调用完整，逐条评分及配对指标复算一致；
 结构化状态在本 dev 集的明确更新和旧目标跟踪上表现更好，三种模式仍存在明显拒绝判断问题。
-test 分区尚未运行，本文不报告泛化、连续记忆或导航性能。
+本文记录 dev 分区，不报告泛化、连续记忆或导航性能；后续 test 已完成，见 [test 阶段结论](qwen35_pairs_test_results_2026-11-05.md)。
 
 ## 1. 批次与审计
 
@@ -100,4 +100,4 @@ test 命令已经可用，见 [成对评测说明](task_update_pairs.md)。验�
 
 建议将成对评测实现、测试、配置和本 dev 结果记录一起提交：
 `feat: add controlled task update pairs and dev evaluation results`。
-test 未执行，后续实测单独记录；下载权重、环境和 `outputs/` 不提交。
+test 后续已执行并单独记录；下载权重、环境和 `outputs/` 不提交。

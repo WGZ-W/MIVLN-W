@@ -261,8 +261,11 @@ decisions, including missing-context abstentions and lucky guesses. See
 [`the paired evaluation guide`](docs/task_update_pairs.md) for frozen inputs,
 category metrics and commands. The 216-request Qwen dev run has been audited:
 supported-decision scores are 34/72 (latest), 21/72 (history), and 52/72 (state).
-State handles all 48 clear updates but still fails ambiguity rejection; test is
-pending. See [the dev results](docs/qwen35_pairs_dev_results_2026-11-05.md).
+State handles all 48 clear dev updates but still fails ambiguity rejection.
+The 216-request test run is also audited: scores are 36/72, 25/72 and 46/72;
+state handles 46/48 clear updates but correctly rejects none of the 24 ambiguous
+or unknown region requests. See [dev results](docs/qwen35_pairs_dev_results_2026-11-05.md)
+and [test results and next steps](docs/qwen35_pairs_test_results_2026-11-05.md).
 
 ## Project layout
 

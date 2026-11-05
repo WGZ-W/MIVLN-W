@@ -129,8 +129,10 @@ python -m scripts.task_update_pairs score \
 
 ## 5. 随后运行 test
 
-在查看 test 预测前确定提示和生成参数。若根据 dev 修改提示，需明确重新版本化并冻结两个分区的输入。
-dev 已完成，当前下一步为以下 test 命令；保持与 dev 相同的冻结提示和生成参数，test 尚未执行：
+test 已完成，216 条记录逐条复算一致；提示哈希和生成参数与 dev 相同。
+有依据决策正确 latest/history/state 分别为 36/72、25/72、46/72，
+state 明确更新 46/48，但 24 条应拒绝消息均未正确拒绝，见 [test 结果与阶段结论](qwen35_pairs_test_results_2026-11-05.md)。
+以下为已执行命令，`_001` 输出目录已经存在，保留用于复现；重跑时需使用新目录。
 
 ```bash
 python -m scripts.predict_task_updates \
@@ -152,9 +154,11 @@ dev/test 是本轮预先指定的语义组分区，作者已了解此前同类�
 部分 dev 表达沿用旧样例。test 是新增的受控合成检查，不构成独立采集的自然语言泛化基准。
 432 个请求也不是 432 个独立语义任务，统计时应考虑语义组及配对关系。
 完整连续对话状态与 HSSD 模型导航仍是后续阶段。
+当前下一步是分别研究历史信息组织与拒绝判断，变体入口尚待实现。
+后续调参使用 dev；已观察的 test 作为回归集，新增效果结论需要新的冻结验证组。
 
 ## 提交建议
 
 源配置、成对生成/评价模块、命令入口、测试、通用评分器的小幅扩展及相关说明可以合并提交为：
 `feat: add controlled context pairs for task update evaluation`。
-CPU 检查与真实 dev 记录核对完成，test 待用户运行；`outputs/` 保持 Git 忽略，不自动提交。
+CPU 检查与真实 dev/test 记录核对完成；`outputs/` 保持 Git 忽略，不自动提交。

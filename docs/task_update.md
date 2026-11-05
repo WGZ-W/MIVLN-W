@@ -190,7 +190,8 @@ python -m scripts.task_update score \
 平衡原目标与恢复目标的 [成对上下文评测](task_update_pairs.md) 已实现，
 dev/test 各 216 条公共请求已冻结，单独评价缺失上下文、猜中答案和歧义误执行。
 真实 dev 的 216 条记录已核对，决策正确数 latest/history/state 分别为 34/72、21/72、52/72，
-详见 [dev 结果](qwen35_pairs_dev_results_2026-11-05.md)。下一步保持设置运行 test；连续模型状态与导航接入仍待实现。
+详见 [dev 结果](qwen35_pairs_dev_results_2026-11-05.md)。同设置 test 也已完成，分别为 36/72、25/72、46/72；
+详见 [test 阶段结论](qwen35_pairs_test_results_2026-11-05.md)。下一步分别研究历史组织和拒绝判断；连续模型状态与导航接入仍待实现。
 
 ## 5. 指标与失败处理
 
