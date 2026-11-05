@@ -242,9 +242,12 @@ answers or region geometry. A `score` command imports external model JSONL respo
 and preserves missing/invalid cases in the denominator. Eighteen synthetic
 development cases exercise the contracts; their scores are not held-out model
 performance. Prior policy context is built from public language using a fixed
-rule builder, while reference states remain evaluator-only. No model API or local
-model inference is connected yet. See [`docs/task_update.md`](docs/task_update.md)
-for schemas, scope, metrics and model-import commands.
+rule builder, while reference states remain evaluator-only.
+`python -m scripts.predict_task_updates` can generate raw predictions from a
+configured Chat Completions compatible service; it requires a base URL and model
+identifier. The client has been tested with mocked responses; no real model run
+has been performed. See [`docs/task_update.md`](docs/task_update.md) for schemas,
+scope, metrics, prediction-generation and model-import commands.
 
 ## Project layout
 

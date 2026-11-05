@@ -1,6 +1,7 @@
 # 独立语言任务更新：契约、规则基线与离线评测
 
 更新日期：2026-11-05。入口 `python -m scripts.task_update` 仅使用标准库，不需要 Habitat、GPU、模型权重或 API。
+预测客户端 `python -m scripts.predict_task_updates` 同样只用标准库，但真实推理需要用户配置模型服务。
 这一步落实“语言理解与增量更新”接口，支持三类操作、旧状态保留检查及外部模型预测导入。
 
 ## 当前交付与范围
@@ -10,11 +11,12 @@
 - `mivln/task_update_eval.py`：独立参考状态、固定上下文构建与逐字段评价。
 - `configs/task_update_cases_v1.json`：18 条合成开发样例，包括 15 条三类更新及 3 条应拒绝猜测的消息。
 - `scripts/task_update.py`：运行规则、导出无答案请求、导入外部预测评分。
+- `scripts/predict_task_updates.py`：通过 Chat Completions 兼容服务逐条生成原始预测，不启动模型服务。
 
 当前是**给定固定历史上下文的一次任务更新评测**。共同的规则构建器从初始指令和历史消息独立建立旧策略状态，
 不是把参考正确状态直接提供给更新器。初始或历史语言无法解析时保留失败，不补入正确答案。
 外部模型只预测当前消息，先前状态并非该模型在连续对话中自己产生的结果。
-视觉落地、完整对话记忆、任务版本、主动求助及 GPU 导航接入仍待实现。
+预测客户端已用模拟服务测试，尚未调用真实模型。视觉落地、完整对话记忆、任务版本、主动求助及 GPU 导航接入仍待实现。
 
 ## 1. 公共输入与三种上下文
 
@@ -130,8 +132,57 @@ python -m scripts.task_update score \
   --updater-name model_under_test --output-dir outputs/task_update_model_eval_001
 ```
 
-上述模型预测文件尚不存在。本次未接入外部 API 或本地模型推理。
-下一项实现是确定模型与运行后端，生成同格式预测；要求所有请求均可对齐，并保留错误和未回答的分母。
+上述根目录预测文件尚不存在。可以使用下面的客户端直接生成子目录中的预测文件，再评分。
+
+### 4.1 自动生成真实模型预测
+
+前提：已运行一个支持 `POST /chat/completions` 的服务，已知 API 基址和实际模型标识。
+例如 [vLLM 的兼容服务](https://docs.vllm.ai/en/stable/serving/openai_compatible_server/) 使用 `/v1/chat/completions`。
+基址应包含服务所需的 `/v1`，客户端会追加 `/chat/completions`。
+本入口不会下载权重、安装推理框架或启动 GPU 服务，不保证支持所有供应商特有的接口与参数。
+
+`outputs/task_update_requests_003` 已导出 54 条有效公共请求，无需再次导出。
+以下地址仅为本地服务示例，模型名必须替换为该服务真实暴露的名称。
+若没有模型服务，应先确定本地部署或远程 API；此时还不能运行真实预测。
+
+```bash
+conda activate mivln
+export TASK_UPDATE_BASE_URL="http://127.0.0.1:8000/v1"
+export TASK_UPDATE_MODEL="替换为服务的实际模型名"
+
+python -m scripts.predict_task_updates \
+  --requests-dir outputs/task_update_requests_003 \
+  --base-url "$TASK_UPDATE_BASE_URL" \
+  --model "$TASK_UPDATE_MODEL" \
+  --output-dir outputs/task_update_model_001
+
+python -m scripts.task_update score \
+  --requests-dir outputs/task_update_requests_003 \
+  --predictions outputs/task_update_model_001/predictions.jsonl \
+  --updater-name "$TASK_UPDATE_MODEL" \
+  --output-dir outputs/task_update_model_eval_001
+```
+
+如果服务需要认证，在当前终端设置 `TASK_UPDATE_API_KEY`；客户端从环境变量读取，不要求将密钥写入代码。
+可用 `--api-key-env` 指定其他变量名。所有输出目录必须为新目录。
+每条请求单独使用系统说明和本条公共请求，不共享对话，也不读取源数据或参考答案。
+系统提示在导出说明末尾明确要求只预测内部对象，外层 ID 与哈希由客户端填写。
+
+生成目录包含：
+
+- `predictions.jsonl`：54 个计划槽位；`prediction` 保存模型原始文本。调用失败用 `null` 占位。
+- `responses.jsonl`：请求错误、服务报告的模型名、结束原因及用量（服务提供时）。
+- `system_prompt.txt`：实际使用的系统提示。
+- `run.json`：输入和提示哈希、服务地址、模型名、参数、调用计数及时间；不保存 API 密钥。
+
+默认参数为 `--temperature 0 --max-tokens 512 --timeout 60`；温度为零不保证服务完全确定。
+不自动重试、不移除围栏、不修复 JSON。调用失败继续保留后续槽位；调用期间中断时，尚未尝试的槽位填 `null`。
+`received` 只表示收到文本，格式与语义是否正确由后续评分决定；截断响应也保留原文和结束原因。
+生成命令遇到调用失败返回 1，仍可对已保存文件评分。
+本轮只执行了模拟服务测试，没有生成真实模型预测或产生 API 调用费用。
+
+下一步是在实际服务上生成 54 条预测，检查 ID/哈希完整对齐，再分析三模式错误；
+正式效果比较还需要按语义组划分的留出语言样例。
 
 ## 5. 指标与失败处理
 
@@ -153,13 +204,15 @@ python -m scripts.task_update score \
 
 ```bash
 python -m unittest tests.test_task_update -v
+python -m unittest tests.test_predict_task_updates -v
 python -m unittest discover -s tests -v
 ```
 
 专项测试覆盖答案隔离、别名歧义、中英文三类更新、旧约束和恢复目标保留、事务失败、严格 JSON、
 上下文失败分母、请求冻结、外部响应缺失/错位、导出导入一致性和拒绝覆盖。
-本轮 20 项新增专项测试通过；全项目在 `habitat` 环境 136 项通过，核心环境通过并跳过 62 项依赖测试。
+任务更新专项 20 项、预测客户端专项 7 项通过；全项目在 `habitat` 环境 143 项通过，核心环境通过并跳过 62 项依赖测试。
 测试使用 CPU 假模拟器，没有启动真实 GPU 导航。
 本轮核心接口、规则、评价、脚本、样例、测试及相关说明可以提交为：
 `feat: add isolated language task update contracts and offline evaluation`。
 图稿改动单独处理；运行输出保持 Git 忽略，不自动暂存、提交或推送。
+预测客户端作为后续独立提交时，可用 `feat: add model prediction generation for task update evaluation`。
