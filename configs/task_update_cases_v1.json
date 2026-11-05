@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "kind": "task_update_development_set",
+  "purpose": "Synthetic bilingual contract-development cases; not HSSD episodes or a held-out language benchmark.",
+  "candidate_goals": [
+    {"goal_id": "island", "description": "带抽屉的厨房岛台", "aliases": ["厨房岛台", "岛台", "kitchen island"]},
+    {"goal_id": "sofa_dark", "description": "深色沙发", "aliases": ["深色沙发", "深色的沙发", "dark sofa", "沙发"]},
+    {"goal_id": "sofa_light", "description": "浅色沙发", "aliases": ["浅色沙发", "浅色的沙发", "light sofa", "沙发"]},
+    {"goal_id": "bed", "description": "金属床", "aliases": ["金属床", "床", "metal bed", "bed"]},
+    {"goal_id": "bathtub", "description": "独立浴缸", "aliases": ["独立浴缸", "浴缸", "bathtub"]},
+    {"goal_id": "table", "description": "摆有水果的餐桌", "aliases": ["餐桌", "dining table"]}
+  ],
+  "candidate_regions": [
+    {"region_id": "region_red", "description": "红色标记区域", "aliases": ["红色区域", "红色标记区域", "red floor region", "red region"]},
+    {"region_id": "region_blue", "description": "蓝色标记区域", "aliases": ["蓝色区域", "蓝色标记区域", "blue floor region", "blue region"]}
+  ],
+  "region_registry": {
+    "region_red": {"region_id": "region_red", "type": "rectangle_xz", "bounds_xz": [[0, 0], [1, 1]], "floor_y": 0, "floor_tolerance_m": 0.5},
+    "region_blue": {"region_id": "region_blue", "type": "rectangle_xz", "bounds_xz": [[2, 0], [3, 1]], "floor_y": 0, "floor_tolerance_m": 0.5}
+  },
+  "cases": [
+    {
+      "case_id": "replace_zh_explicit", "group_id": "replace_island_sofa", "language": "zh",
+      "initial_instruction": "前往厨房岛台。", "history": [],
+      "message": "不用去厨房岛台了，改去深色沙发。",
+      "reference": {"initial_goal": "island", "context_updates": [], "prediction": {"status": "ok", "task_update": {"operation": "replace_goal", "old_goal": "island", "new_goal": "sofa_dark"}}}
+    },
+    {
+      "case_id": "replace_zh_implicit", "group_id": "replace_island_bed", "language": "zh",
+      "initial_instruction": "前往厨房岛台。", "history": [],
+      "message": "改去金属床。",
+      "reference": {"initial_goal": "island", "context_updates": [], "prediction": {"status": "ok", "task_update": {"operation": "replace_goal", "old_goal": "island", "new_goal": "bed"}}}
+    },
+    {
+      "case_id": "replace_zh_keep_constraint", "group_id": "replace_island_bath_red", "language": "zh",
+      "initial_instruction": "前往厨房岛台。", "history": ["避开红色区域。"],
+      "message": "改去独立浴缸。",
+      "reference": {"initial_goal": "island", "context_updates": [{"operation": "add_avoid_region", "region_id": "region_red"}], "prediction": {"status": "ok", "task_update": {"operation": "replace_goal", "old_goal": "island", "new_goal": "bathtub"}}}
+    },
+    {
+      "case_id": "replace_en_explicit", "group_id": "replace_island_sofa", "language": "en",
+      "initial_instruction": "Go to the kitchen island.", "history": [],
+      "message": "Instead of the kitchen island, go to the dark sofa.",
+      "reference": {"initial_goal": "island", "context_updates": [], "prediction": {"status": "ok", "task_update": {"operation": "replace_goal", "old_goal": "island", "new_goal": "sofa_dark"}}}
+    },
+    {
+      "case_id": "replace_zh_prior_change", "group_id": "replace_bed_table_after_island", "language": "zh",
+      "initial_instruction": "前往厨房岛台。", "history": ["改去金属床。"],
+      "message": "改去餐桌。",
+      "reference": {"initial_goal": "island", "context_updates": [{"operation": "replace_goal", "old_goal": "island", "new_goal": "bed"}], "prediction": {"status": "ok", "task_update": {"operation": "replace_goal", "old_goal": "bed", "new_goal": "table"}}}
+    },
+    {
+      "case_id": "avoid_zh_keep_goal", "group_id": "avoid_red_island", "language": "zh",
+      "initial_instruction": "前往厨房岛台。", "history": [],
+      "message": "继续原任务，避开红色区域。",
+      "reference": {"initial_goal": "island", "context_updates": [], "prediction": {"status": "ok", "task_update": {"operation": "add_avoid_region", "region_id": "region_red"}}}
+    },
+    {
+      "case_id": "avoid_zh_blue", "group_id": "avoid_blue_bed", "language": "zh",
+      "initial_instruction": "前往金属床。", "history": [],
+      "message": "不要经过蓝色区域。",
+      "reference": {"initial_goal": "bed", "context_updates": [], "prediction": {"status": "ok", "task_update": {"operation": "add_avoid_region", "region_id": "region_blue"}}}
+    },
+    {
+      "case_id": "avoid_zh_keep_old_constraint", "group_id": "avoid_blue_keep_red", "language": "zh",
+      "initial_instruction": "前往厨房岛台。", "history": ["避开红色区域。"],
+      "message": "另外避开蓝色区域。",
+      "reference": {"initial_goal": "island", "context_updates": [{"operation": "add_avoid_region", "region_id": "region_red"}], "prediction": {"status": "ok", "task_update": {"operation": "add_avoid_region", "region_id": "region_blue"}}}
+    },
+    {
+      "case_id": "avoid_en_red", "group_id": "avoid_red_island", "language": "en",
+      "initial_instruction": "Go to the kitchen island.", "history": [],
+      "message": "Keep going to the same destination, but avoid the red floor region.",
+      "reference": {"initial_goal": "island", "context_updates": [], "prediction": {"status": "ok", "task_update": {"operation": "add_avoid_region", "region_id": "region_red"}}}
+    },
+    {
+      "case_id": "avoid_en_keep_old_constraint", "group_id": "avoid_blue_keep_red", "language": "en",
+      "initial_instruction": "Go to the kitchen island.", "history": ["Avoid the red floor region."],
+      "message": "Also avoid the blue floor region.",
+      "reference": {"initial_goal": "island", "context_updates": [{"operation": "add_avoid_region", "region_id": "region_red"}], "prediction": {"status": "ok", "task_update": {"operation": "add_avoid_region", "region_id": "region_blue"}}}
+    },
+    {
+      "case_id": "insert_zh_implicit_resume", "group_id": "insert_sofa_resume_island", "language": "zh",
+      "initial_instruction": "前往厨房岛台。", "history": [],
+      "message": "先去深色沙发，再继续原任务。",
+      "reference": {"initial_goal": "island", "context_updates": [], "prediction": {"status": "ok", "task_update": {"operation": "insert_subgoal", "subgoal": "sofa_dark", "resume_goal": "island"}}}
+    },
+    {
+      "case_id": "insert_zh_explicit_resume", "group_id": "insert_bath_resume_island", "language": "zh",
+      "initial_instruction": "前往厨房岛台。", "history": [],
+      "message": "先去独立浴缸，然后继续去厨房岛台。",
+      "reference": {"initial_goal": "island", "context_updates": [], "prediction": {"status": "ok", "task_update": {"operation": "insert_subgoal", "subgoal": "bathtub", "resume_goal": "island"}}}
+    },
+    {
+      "case_id": "insert_zh_keep_constraint", "group_id": "insert_table_resume_island_red", "language": "zh",
+      "initial_instruction": "前往厨房岛台。", "history": ["避开红色区域。"],
+      "message": "先去餐桌，之后继续原来的任务。",
+      "reference": {"initial_goal": "island", "context_updates": [{"operation": "add_avoid_region", "region_id": "region_red"}], "prediction": {"status": "ok", "task_update": {"operation": "insert_subgoal", "subgoal": "table", "resume_goal": "island"}}}
+    },
+    {
+      "case_id": "insert_en_explicit_resume", "group_id": "insert_sofa_resume_island", "language": "en",
+      "initial_instruction": "Go to the kitchen island.", "history": [],
+      "message": "First go to the dark sofa. Then resume going to the kitchen island.",
+      "reference": {"initial_goal": "island", "context_updates": [], "prediction": {"status": "ok", "task_update": {"operation": "insert_subgoal", "subgoal": "sofa_dark", "resume_goal": "island"}}}
+    },
+    {
+      "case_id": "insert_en_implicit_resume", "group_id": "insert_bath_resume_island", "language": "en",
+      "initial_instruction": "Go to the kitchen island.", "history": [],
+      "message": "First visit the bathtub, then continue the original task.",
+      "reference": {"initial_goal": "island", "context_updates": [], "prediction": {"status": "ok", "task_update": {"operation": "insert_subgoal", "subgoal": "bathtub", "resume_goal": "island"}}}
+    },
+    {
+      "case_id": "ambiguous_sofa", "group_id": "reject_generic_sofa", "language": "zh",
+      "initial_instruction": "前往厨房岛台。", "history": [], "message": "改去沙发。",
+      "reference": {"initial_goal": "island", "context_updates": [], "prediction": {"status": "abstain", "reason": "ambiguous_goal"}}
+    },
+    {
+      "case_id": "unknown_goal", "group_id": "reject_unknown_bookshelf", "language": "zh",
+      "initial_instruction": "前往厨房岛台。", "history": [], "message": "改去书架。",
+      "reference": {"initial_goal": "island", "context_updates": [], "prediction": {"status": "abstain", "reason": "unknown_goal"}}
+    },
+    {
+      "case_id": "ambiguous_region", "group_id": "reject_unidentified_region", "language": "en",
+      "initial_instruction": "Go to the kitchen island.", "history": [], "message": "Keep going, but avoid the marked floor region.",
+      "reference": {"initial_goal": "island", "context_updates": [], "prediction": {"status": "abstain", "reason": "ambiguous_region"}}
+    }
+  ]
+}

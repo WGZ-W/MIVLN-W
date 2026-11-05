@@ -226,6 +226,26 @@ negative tests, commands and complete stage acceptance criteria. Measured result
 the audit correction and remaining manual video review are documented in
 [`the acceptance report`](docs/hssd_subgoal_results_2026-11-03.md).
 
+## Independent language task-update development
+
+The dependency-free `scripts.task_update` entry evaluates goal replacement,
+avoid-region addition and subgoal insertion without Habitat or a GPU:
+
+```bash
+python -m scripts.task_update run --mode all --output-dir outputs/task_update_rules_002
+python -m scripts.task_update export --mode all --output-dir outputs/task_update_requests_002
+```
+
+The first command runs a limited bilingual **rule baseline** in latest-message,
+history and prior-state modes. The second exports public requests without reference
+answers or region geometry. A `score` command imports external model JSONL responses
+and preserves missing/invalid cases in the denominator. Eighteen synthetic
+development cases exercise the contracts; their scores are not held-out model
+performance. Prior policy context is built from public language using a fixed
+rule builder, while reference states remain evaluator-only. No model API or local
+model inference is connected yet. See [`docs/task_update.md`](docs/task_update.md)
+for schemas, scope, metrics and model-import commands.
+
 ## Project layout
 
 ```text
