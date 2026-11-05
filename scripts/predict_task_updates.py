@@ -79,12 +79,18 @@ def endpoint_for(base_url):
     return base_url.rstrip("/") + "/chat/completions"
 
 
-def complete(endpoint, model, system_prompt, request, api_key, timeout, temperature, max_tokens):
+def complete(endpoint, model, system_prompt, request, api_key, timeout, temperature, max_tokens,
+             thinking_mode="default"):
     """One stateless HTTP call; preserve model text without repairing its JSON."""
     payload = {"model": model, "messages": [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": encode(request)}],
         "temperature": temperature, "max_tokens": max_tokens, "stream": False}
+    if thinking_mode != "default":
+        # vLLM/Qwen apply this boolean when rendering the model's chat template.
+        # Keep it out of generic requests unless explicitly selected: other
+        # providers may use a different parameter or reject this extension.
+        payload["chat_template_kwargs"] = {"enable_thinking": thinking_mode == "on"}
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = "Bearer " + api_key
@@ -103,8 +109,10 @@ def complete(endpoint, model, system_prompt, request, api_key, timeout, temperat
 
 def generate(args):
     """Retain every planned slot, including failed calls and interruption tails."""
+    thinking_mode = getattr(args, "thinking_mode", "default")
     if (not args.model.strip() or not math.isfinite(args.timeout) or args.timeout <= 0
-            or not math.isfinite(args.temperature) or args.temperature < 0 or args.max_tokens <= 0):
+            or not math.isfinite(args.temperature) or args.temperature < 0 or args.max_tokens <= 0
+            or thinking_mode not in ("default", "off", "on")):
         raise ValueError("Model and generation parameters are invalid")
     endpoint = endpoint_for(args.base_url)
     folder = args.requests_dir.resolve()
@@ -123,6 +131,8 @@ def generate(args):
         "instructions_sha256": sha256(folder / "instructions.txt"),
         "system_prompt_sha256": hashlib.sha256(system_prompt.encode("utf-8")).hexdigest(),
         "model": args.model, "base_url": args.base_url, "temperature": args.temperature,
+        "thinking_mode": thinking_mode,
+        "chat_template_kwargs": ({} if thinking_mode == "default" else {"enable_thinking": thinking_mode == "on"}),
         "max_tokens": args.max_tokens, "timeout_seconds": args.timeout, "planned_records": len(index),
         "attempted": 0, "received": 0, "failed": 0, "interrupted": False,
         "notes": "Raw outputs; no JSON repair, retries, reference answers or dialogue carry-over"}
@@ -139,7 +149,7 @@ def generate(args):
                 run["attempted"] += 1
                 try:
                     content, metadata = complete(endpoint, args.model, system_prompt, requests[identity],
-                        api_key, args.timeout, args.temperature, args.max_tokens)
+                        api_key, args.timeout, args.temperature, args.max_tokens, thinking_mode)
                 except KeyboardInterrupt:
                     run["interrupted"] = True
                     error = "Interrupted during model call"
@@ -175,6 +185,8 @@ def main():
     parser.add_argument("--timeout", type=float, default=60.0)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--max-tokens", type=int, default=512)
+    parser.add_argument("--thinking-mode", choices=("default", "off", "on"), default="default",
+                        help="vLLM/Qwen chat-template extension; default leaves the service setting unchanged")
     parser.add_argument("--output-dir", type=Path, required=True)
     return generate(parser.parse_args())
 

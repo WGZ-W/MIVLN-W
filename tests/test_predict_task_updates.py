@@ -58,6 +58,7 @@ class PredictionGenerationTests(unittest.TestCase):
                 self.assertEqual(request.get_header("Authorization"), "Bearer test-key")
                 payload = json.loads(request.data)
                 self.assertEqual(len(payload["messages"]), 2)
+                self.assertNotIn("chat_template_kwargs", payload)
                 public = json.loads(payload["messages"][1]["content"])
                 if public["mode"] == "latest":
                     self.assertEqual(public["context"], {})
@@ -72,6 +73,20 @@ class PredictionGenerationTests(unittest.TestCase):
             run = evaluation.read_json(args.output_dir / "run.json")
             self.assertEqual(run["received"], 12)
             self.assertNotIn("test-key", (args.output_dir / "run.json").read_text())
+
+    def test_thinking_mode_is_an_explicit_boolean_and_recorded(self):
+        for mode, expected in (("off", False), ("on", True)):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temporary, redirect_stdout(io.StringIO()):
+                args = self.prepare(Path(temporary))
+                args.thinking_mode = mode
+                with patch.object(inference, "urlopen", side_effect=self.response) as transport:
+                    self.assertEqual(inference.generate(args), 0)
+                for call in transport.call_args_list:
+                    payload = json.loads(call.args[0].data)
+                    self.assertIs(payload["chat_template_kwargs"]["enable_thinking"], expected)
+                run = evaluation.read_json(args.output_dir / "run.json")
+                self.assertEqual(run["thinking_mode"], mode)
+                self.assertIs(run["chat_template_kwargs"]["enable_thinking"], expected)
 
     def test_generation_does_not_open_source_dataset(self):
         with tempfile.TemporaryDirectory() as temporary, redirect_stdout(io.StringIO()):
@@ -142,8 +157,9 @@ class PredictionGenerationTests(unittest.TestCase):
     def test_invalid_parameters_and_credential_urls_rejected(self):
         with tempfile.TemporaryDirectory() as temporary, redirect_stdout(io.StringIO()):
             args = self.prepare(Path(temporary))
+            args.thinking_mode = "default"
             for name, value in (("timeout", float("nan")), ("temperature", -1), ("max_tokens", 0),
-                                ("base_url", "http://user:secret@localhost/v1")):
+                                ("base_url", "http://user:secret@localhost/v1"), ("thinking_mode", "invalid")):
                 previous = getattr(args, name)
                 setattr(args, name, value)
                 with self.subTest(name=name), self.assertRaises(ValueError):

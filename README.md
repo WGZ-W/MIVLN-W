@@ -245,9 +245,14 @@ performance. Prior policy context is built from public language using a fixed
 rule builder, while reference states remain evaluator-only.
 `python -m scripts.predict_task_updates` can generate raw predictions from a
 configured Chat Completions compatible service; it requires a base URL and model
-identifier. The client has been tested with mocked responses; no real model run
-has been performed. See [`docs/task_update.md`](docs/task_update.md) for schemas,
+identifier. A first Qwen3.5-9B development run completed all 54 requests: exact
+update/state scores were 15/18, 15/18 and 16/18 across the three modes.
+These are synthetic development results, with ambiguity errors and unsupported
+context guesses; see [the audit report](docs/qwen35_task_update_results_2026-11-05.md).
+See [`docs/task_update.md`](docs/task_update.md) for schemas,
 scope, metrics, prediction-generation and model-import commands.
+For local Qwen3.5-9B weights, see [`the deployment guide`](docs/qwen35_local.md);
+the client supports `--thinking-mode off` for compatible chat templates.
 
 ## Project layout
 
