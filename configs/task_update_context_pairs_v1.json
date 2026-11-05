@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "kind": "task_update_context_pairs",
+  "purpose": "Synthetic controlled context/order pairs. Prospective family-disjoint dev/test partitions; not a natural-language generalization or navigation benchmark.",
+  "seed": 20261105,
+  "candidate_goals": [
+    {"goal_id": "island", "description": "带抽屉的厨房岛台", "aliases": ["厨房岛台", "岛台", "kitchen island"]},
+    {"goal_id": "sofa_dark", "description": "深色沙发", "aliases": ["深色沙发", "深色的沙发", "dark sofa", "沙发", "sofa"]},
+    {"goal_id": "sofa_light", "description": "浅色沙发", "aliases": ["浅色沙发", "浅色的沙发", "light sofa", "沙发", "sofa"]},
+    {"goal_id": "bed", "description": "金属床", "aliases": ["金属床", "床", "metal bed", "bed"]},
+    {"goal_id": "bathtub", "description": "独立浴缸", "aliases": ["独立浴缸", "浴缸", "bathtub"]},
+    {"goal_id": "table", "description": "摆有水果的餐桌", "aliases": ["餐桌", "dining table"]}
+  ],
+  "candidate_regions": [
+    {"region_id": "region_red", "description": "红色标记区域", "aliases": ["红色区域", "红色标记区域", "red floor region", "red region"]},
+    {"region_id": "region_blue", "description": "蓝色标记区域", "aliases": ["蓝色区域", "蓝色标记区域", "blue floor region", "blue region"]}
+  ],
+  "region_registry": {
+    "region_red": {"region_id": "region_red", "type": "rectangle_xz", "bounds_xz": [[0, 0], [1, 1]], "floor_y": 0, "floor_tolerance_m": 0.5},
+    "region_blue": {"region_id": "region_blue", "type": "rectangle_xz", "bounds_xz": [[2, 0], [3, 1]], "floor_y": 0, "floor_tolerance_m": 0.5}
+  },
+  "goal_names": {
+    "island": {"zh": "厨房岛台", "en": "kitchen island"},
+    "sofa_dark": {"zh": "深色沙发", "en": "dark sofa"},
+    "sofa_light": {"zh": "浅色沙发", "en": "light sofa"},
+    "bed": {"zh": "金属床", "en": "metal bed"},
+    "bathtub": {"zh": "独立浴缸", "en": "bathtub"},
+    "table": {"zh": "餐桌", "en": "dining table"}
+  },
+  "region_names": {
+    "region_red": {"zh": "红色区域", "en": "red floor region"},
+    "region_blue": {"zh": "蓝色区域", "en": "blue floor region"}
+  },
+  "contexts": [
+    {"context_id": "c1", "initial_goal": "bed", "active_goal": "island", "prior_region": "region_red"},
+    {"context_id": "c2", "initial_goal": "table", "active_goal": "bed", "prior_region": "region_blue"},
+    {"context_id": "c3", "initial_goal": "island", "active_goal": "table", "prior_region": "region_red"}
+  ],
+  "families": [
+    {"family_id": "resume_dark", "split": "dev", "kind": "insert_subgoal", "target_id": "sofa_dark", "requires_context": true,
+      "messages": {"zh": "先去深色沙发，再继续原任务。", "en": "First go to the dark sofa, then continue the original task."}},
+    {"family_id": "resume_bath", "split": "test", "kind": "insert_subgoal", "target_id": "bathtub", "requires_context": true,
+      "messages": {"zh": "先前往独立浴缸，再去原目标。", "en": "First visit the bathtub; then resume the original goal."}},
+    {"family_id": "replace_dark", "split": "dev", "kind": "replace_goal", "target_id": "sofa_dark", "requires_context": true,
+      "messages": {"zh": "改去深色沙发。", "en": "Go to the dark sofa instead."}},
+    {"family_id": "replace_bath", "split": "test", "kind": "replace_goal", "target_id": "bathtub", "requires_context": true,
+      "messages": {"zh": "目的地调整为独立浴缸，之前的目的地取消。", "en": "The bathtub is the revised destination; cancel the previous destination."}},
+    {"family_id": "avoid_red", "split": "dev", "kind": "add_avoid_region", "target_id": "region_red", "requires_context": false,
+      "messages": {"zh": "继续原任务，避开红色区域。", "en": "Keep the original destination, but avoid the red floor region."}},
+    {"family_id": "avoid_blue", "split": "test", "kind": "add_avoid_region", "target_id": "region_blue", "requires_context": false,
+      "messages": {"zh": "保持原定目的地，不要进入蓝色区域。", "en": "Do not enter the blue floor region; keep the destination."}},
+    {"family_id": "explicit_replace", "split": "dev", "kind": "replace_goal", "target_id": "sofa_light", "requires_context": false,
+      "messages": {"zh": "不用去{active_goal}了，改去浅色沙发。", "en": "Instead of the {active_goal}, go to the light sofa."}},
+    {"family_id": "explicit_resume", "split": "test", "kind": "insert_subgoal", "target_id": "sofa_dark", "requires_context": false,
+      "messages": {"zh": "去深色沙发处理一下，随后返回{active_goal}继续原任务。", "en": "Visit the dark sofa as a temporary stop, then return to the {active_goal} to finish the original task."}},
+    {"family_id": "ambiguous_sofa", "split": "dev", "kind": "ambiguous_goal", "target_id": null, "requires_context": false,
+      "messages": {"zh": "改去沙发。", "en": "Go to the sofa instead."}},
+    {"family_id": "ambiguous_region", "split": "test", "kind": "ambiguous_region", "target_id": null, "requires_context": false,
+      "messages": {"zh": "继续任务，避开某个标记区域，颜色暂不明确。", "en": "Keep the destination; avoid the marked floor region, whose color is unspecified."}},
+    {"family_id": "unknown_goal", "split": "dev", "kind": "unknown_goal", "target_id": null, "requires_context": false,
+      "messages": {"zh": "改去书架。", "en": "Go to the bookshelf instead."}},
+    {"family_id": "unknown_region", "split": "test", "kind": "unknown_region", "target_id": null, "requires_context": false,
+      "messages": {"zh": "紫色标记区域禁止通行，原目标照旧。", "en": "Treat the purple floor region as off limits and keep the destination."}}
+  ]
+}

@@ -254,6 +254,16 @@ scope, metrics, prediction-generation and model-import commands.
 For local Qwen3.5-9B weights, see [`the deployment guide`](docs/qwen35_local.md);
 the client supports `--thinking-mode off` for compatible chat templates.
 
+Controlled context/order pairs are available through `python -m scripts.task_update_pairs`:
+144 synthetic cases expand to 432 requests, split into dev/test families with
+216 requests each. The evaluator separates task-label matches from supported
+decisions, including missing-context abstentions and lucky guesses. See
+[`the paired evaluation guide`](docs/task_update_pairs.md) for frozen inputs,
+category metrics and commands. The 216-request Qwen dev run has been audited:
+supported-decision scores are 34/72 (latest), 21/72 (history), and 52/72 (state).
+State handles all 48 clear updates but still fails ambiguity rejection; test is
+pending. See [the dev results](docs/qwen35_pairs_dev_results_2026-11-05.md).
+
 ## Project layout
 
 ```text

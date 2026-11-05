@@ -143,7 +143,8 @@ def export(args):
     return 1 if any(record["context_error"] for record in records) else 0
 
 
-def load_export(folder):
+def load_export(folder, plan_loader=None):
+    """Rebuild frozen inputs; optional loaders support separately versioned tracks."""
     manifest = read_json(folder/"manifest.json")
     if (manifest.get("schema_version") != 1 or manifest.get("kind") != "conditional_task_update_requests"
             or manifest.get("context_builder") != BUILDER):
@@ -154,7 +155,7 @@ def load_export(folder):
     for name, key in (("requests.jsonl", "requests_sha256"), ("request_index.json", "request_index_sha256")):
         if file_sha256(folder/name) != manifest[key]:
             raise ValueError(f"Frozen public input changed: {name}")
-    dataset, records = load_plan(dataset_path, manifest["modes"])
+    dataset, records = (plan_loader or load_plan)(dataset_path, manifest["modes"])
     requests = [strict_json(line) for line in (folder/"requests.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
     expected_requests = [record["request"] for record in records if record["request"] is not None]
     expected_index = {record["request_id"]: record["request_sha256"] for record in records}
@@ -165,9 +166,9 @@ def load_export(folder):
     return dataset, records, manifest
 
 
-def score(args):
+def score(args, plan_loader=None, report_writer=None):
     """Missing predictions remain errors in the original planned denominator."""
-    dataset, records, manifest = load_export(args.requests_dir.resolve())
+    dataset, records, manifest = load_export(args.requests_dir.resolve(), plan_loader)
     planned = {record["request_id"]: record for record in records}
     submitted = {}
     for line_number, line in enumerate(args.predictions.read_text(encoding="utf-8").splitlines(), 1):
@@ -188,7 +189,7 @@ def score(args):
         error = ("Missing prediction" if value is None else
                  "Prediction request hash mismatch" if value["request_sha256"] != record["request_sha256"] else None)
         rows.append(evaluate_record(dataset, record, value["prediction"] if value else None, error))
-    report = write_results(output, records, rows, args.updater_name,
+    report = (report_writer or write_results)(output, records, rows, args.updater_name,
         {"requests_dir": str(args.requests_dir.resolve()), "requests_sha256": manifest["requests_sha256"],
          "dataset_sha256": manifest["dataset_sha256"], "predictions_sha256": file_sha256(args.predictions)})
     return 0 if report["completed_without_input_errors"] else 1
