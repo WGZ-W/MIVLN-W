@@ -100,6 +100,15 @@ def complete(endpoint, model, system_prompt, request, api_key, timeout, temperat
              thinking_mode="default", prompt_variant="baseline"):
     """One stateless HTTP call; preserve model text without repairing its JSON."""
     payload = payload_for(model, system_prompt, request, temperature, max_tokens, thinking_mode, prompt_variant)
+    return complete_payload(endpoint, payload, api_key, timeout)
+
+
+def complete_payload(endpoint, payload, api_key, timeout):
+    """Send an already recorded body, also used by sequential rollout clients.
+
+    Separating transport from presentation lets a rollout record the exact
+    feedback-aware prompt it sends without changing existing batch prompts.
+    """
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = "Bearer " + api_key

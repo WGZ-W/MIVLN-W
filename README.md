@@ -269,8 +269,20 @@ and [test results and next steps](docs/qwen35_pairs_test_results_2026-11-05.md).
 Controlled prompt ablations are available through `python -m scripts.task_update_ablation`:
 prepare inputs without inference, then audit and rescore baseline, history-timeline,
 and refusal-check runs with identical model controls and candidates. See
-[the ablation commands](docs/task_update_ablation.md); CPU checks are complete,
-while the two new model batches remain to be run.
+[the ablation commands](docs/task_update_ablation.md). The history condition has
+been audited: history improves from 21/72 to 39/72, with regression on explicit
+replacement and unresolved ambiguity rejection; see [the results](docs/qwen35_history_ablation_dev_results_2026-11-06.md).
+All three dev conditions are now audited. Refusal instructions yield 35/72,
+27/72 and 53/72 across latest/history/state, improving unknown-object refusal
+while leaving ambiguity and missing-context refusal unresolved. See
+[the three-condition analysis](docs/qwen35_prompt_ablation_dev_results_2026-11-06.md).
+
+Sequential clear-update experiments are available through `python -m scripts.task_update_rollout`.
+Each branch carries its own applied model updates; history receives its own execution
+feedback, and state receives its resulting symbolic state. Twenty-four synthetic
+dialogues provide six updates and one completion notice each, totaling 288 model
+requests across history/state. CPU rules, failure injection and causal replay are
+validated; real model runs remain pending. See [the rollout guide](docs/task_update_rollout.md).
 
 ## Project layout
 

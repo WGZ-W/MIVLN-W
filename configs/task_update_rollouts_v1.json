@@ -1,0 +1,2139 @@
+{
+  "schema_version": 1,
+  "kind": "task_update_rollout_dataset",
+  "purpose": "Synthetic clear-update development dialogues with policy-owned sequential state. Completion notices are controlled text fixtures, not measured navigation. No held-out/generalization claim.",
+  "candidate_goals": [
+    {
+      "goal_id": "island",
+      "description": "带抽屉的厨房岛台",
+      "aliases": [
+        "厨房岛台",
+        "岛台",
+        "kitchen island"
+      ]
+    },
+    {
+      "goal_id": "sofa_dark",
+      "description": "深色沙发",
+      "aliases": [
+        "深色沙发",
+        "深色的沙发",
+        "dark sofa",
+        "沙发",
+        "sofa"
+      ]
+    },
+    {
+      "goal_id": "sofa_light",
+      "description": "浅色沙发",
+      "aliases": [
+        "浅色沙发",
+        "浅色的沙发",
+        "light sofa",
+        "沙发",
+        "sofa"
+      ]
+    },
+    {
+      "goal_id": "bed",
+      "description": "金属床",
+      "aliases": [
+        "金属床",
+        "床",
+        "metal bed",
+        "bed"
+      ]
+    },
+    {
+      "goal_id": "bathtub",
+      "description": "独立浴缸",
+      "aliases": [
+        "独立浴缸",
+        "浴缸",
+        "bathtub"
+      ]
+    },
+    {
+      "goal_id": "table",
+      "description": "摆有水果的餐桌",
+      "aliases": [
+        "餐桌",
+        "dining table"
+      ]
+    }
+  ],
+  "candidate_regions": [
+    {
+      "region_id": "region_red",
+      "description": "红色标记区域",
+      "aliases": [
+        "红色区域",
+        "红色标记区域",
+        "red floor region",
+        "red region"
+      ]
+    },
+    {
+      "region_id": "region_blue",
+      "description": "蓝色标记区域",
+      "aliases": [
+        "蓝色区域",
+        "蓝色标记区域",
+        "blue floor region",
+        "blue region"
+      ]
+    }
+  ],
+  "region_registry": {
+    "region_red": {
+      "region_id": "region_red",
+      "type": "rectangle_xz",
+      "bounds_xz": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "floor_y": 0,
+      "floor_tolerance_m": 0.5
+    },
+    "region_blue": {
+      "region_id": "region_blue",
+      "type": "rectangle_xz",
+      "bounds_xz": [
+        [
+          2,
+          0
+        ],
+        [
+          3,
+          1
+        ]
+      ],
+      "floor_y": 0,
+      "floor_tolerance_m": 0.5
+    }
+  },
+  "dialogues": [
+    {
+      "case_id": "replace_then_subgoal_zh_island_0",
+      "group_id": "replace_then_subgoal",
+      "language": "zh",
+      "order": 0,
+      "initial_instruction": "前往厨房岛台。",
+      "reference_initial_goal": "island",
+      "events": [
+        {
+          "type": "message",
+          "message": "改去深色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "island",
+              "new_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开红色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "先去独立浴缸，再继续原任务。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "bathtub",
+              "resume_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "bathtub"
+        },
+        {
+          "type": "message",
+          "message": "改去浅色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_dark",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开蓝色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "不用去浅色沙发了，改去厨房岛台。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "island"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "replace_then_subgoal_zh_island_1",
+      "group_id": "replace_then_subgoal",
+      "language": "zh",
+      "order": 1,
+      "initial_instruction": "前往厨房岛台。",
+      "reference_initial_goal": "island",
+      "events": [
+        {
+          "type": "message",
+          "message": "改去深色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "island",
+              "new_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开红色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "先去独立浴缸，再继续原任务。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "bathtub",
+              "resume_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "bathtub"
+        },
+        {
+          "type": "message",
+          "message": "改去浅色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_dark",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开蓝色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "不用去浅色沙发了，改去厨房岛台。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "island"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "replace_then_subgoal_zh_bed_0",
+      "group_id": "replace_then_subgoal",
+      "language": "zh",
+      "order": 0,
+      "initial_instruction": "前往金属床。",
+      "reference_initial_goal": "bed",
+      "events": [
+        {
+          "type": "message",
+          "message": "改去深色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bed",
+              "new_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开红色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "先去独立浴缸，再继续原任务。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "bathtub",
+              "resume_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "bathtub"
+        },
+        {
+          "type": "message",
+          "message": "改去浅色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_dark",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开蓝色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "不用去浅色沙发了，改去金属床。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "bed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "replace_then_subgoal_zh_bed_1",
+      "group_id": "replace_then_subgoal",
+      "language": "zh",
+      "order": 1,
+      "initial_instruction": "前往金属床。",
+      "reference_initial_goal": "bed",
+      "events": [
+        {
+          "type": "message",
+          "message": "改去深色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bed",
+              "new_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开红色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "先去独立浴缸，再继续原任务。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "bathtub",
+              "resume_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "bathtub"
+        },
+        {
+          "type": "message",
+          "message": "改去浅色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_dark",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开蓝色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "不用去浅色沙发了，改去金属床。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "bed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "replace_then_subgoal_zh_table_0",
+      "group_id": "replace_then_subgoal",
+      "language": "zh",
+      "order": 0,
+      "initial_instruction": "前往餐桌。",
+      "reference_initial_goal": "table",
+      "events": [
+        {
+          "type": "message",
+          "message": "改去深色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "table",
+              "new_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开红色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "先去独立浴缸，再继续原任务。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "bathtub",
+              "resume_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "bathtub"
+        },
+        {
+          "type": "message",
+          "message": "改去浅色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_dark",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开蓝色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "不用去浅色沙发了，改去餐桌。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "table"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "replace_then_subgoal_zh_table_1",
+      "group_id": "replace_then_subgoal",
+      "language": "zh",
+      "order": 1,
+      "initial_instruction": "前往餐桌。",
+      "reference_initial_goal": "table",
+      "events": [
+        {
+          "type": "message",
+          "message": "改去深色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "table",
+              "new_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开红色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "先去独立浴缸，再继续原任务。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "bathtub",
+              "resume_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "bathtub"
+        },
+        {
+          "type": "message",
+          "message": "改去浅色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_dark",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开蓝色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "不用去浅色沙发了，改去餐桌。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "table"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "replace_then_subgoal_en_island_0",
+      "group_id": "replace_then_subgoal",
+      "language": "en",
+      "order": 0,
+      "initial_instruction": "Go to the kitchen island.",
+      "reference_initial_goal": "island",
+      "events": [
+        {
+          "type": "message",
+          "message": "Go to the dark sofa instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "island",
+              "new_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the red floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "First go to the bathtub, then continue the original task.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "bathtub",
+              "resume_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "bathtub"
+        },
+        {
+          "type": "message",
+          "message": "Go to the light sofa instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_dark",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the blue floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Instead of the light sofa, go to the kitchen island.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "island"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "replace_then_subgoal_en_island_1",
+      "group_id": "replace_then_subgoal",
+      "language": "en",
+      "order": 1,
+      "initial_instruction": "Go to the kitchen island.",
+      "reference_initial_goal": "island",
+      "events": [
+        {
+          "type": "message",
+          "message": "Go to the dark sofa instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "island",
+              "new_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the red floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "First go to the bathtub, then continue the original task.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "bathtub",
+              "resume_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "bathtub"
+        },
+        {
+          "type": "message",
+          "message": "Go to the light sofa instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_dark",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the blue floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Instead of the light sofa, go to the kitchen island.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "island"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "replace_then_subgoal_en_bed_0",
+      "group_id": "replace_then_subgoal",
+      "language": "en",
+      "order": 0,
+      "initial_instruction": "Go to the metal bed.",
+      "reference_initial_goal": "bed",
+      "events": [
+        {
+          "type": "message",
+          "message": "Go to the dark sofa instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bed",
+              "new_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the red floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "First go to the bathtub, then continue the original task.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "bathtub",
+              "resume_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "bathtub"
+        },
+        {
+          "type": "message",
+          "message": "Go to the light sofa instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_dark",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the blue floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Instead of the light sofa, go to the metal bed.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "bed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "replace_then_subgoal_en_bed_1",
+      "group_id": "replace_then_subgoal",
+      "language": "en",
+      "order": 1,
+      "initial_instruction": "Go to the metal bed.",
+      "reference_initial_goal": "bed",
+      "events": [
+        {
+          "type": "message",
+          "message": "Go to the dark sofa instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bed",
+              "new_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the red floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "First go to the bathtub, then continue the original task.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "bathtub",
+              "resume_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "bathtub"
+        },
+        {
+          "type": "message",
+          "message": "Go to the light sofa instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_dark",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the blue floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Instead of the light sofa, go to the metal bed.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "bed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "replace_then_subgoal_en_table_0",
+      "group_id": "replace_then_subgoal",
+      "language": "en",
+      "order": 0,
+      "initial_instruction": "Go to the dining table.",
+      "reference_initial_goal": "table",
+      "events": [
+        {
+          "type": "message",
+          "message": "Go to the dark sofa instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "table",
+              "new_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the red floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "First go to the bathtub, then continue the original task.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "bathtub",
+              "resume_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "bathtub"
+        },
+        {
+          "type": "message",
+          "message": "Go to the light sofa instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_dark",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the blue floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Instead of the light sofa, go to the dining table.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "table"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "replace_then_subgoal_en_table_1",
+      "group_id": "replace_then_subgoal",
+      "language": "en",
+      "order": 1,
+      "initial_instruction": "Go to the dining table.",
+      "reference_initial_goal": "table",
+      "events": [
+        {
+          "type": "message",
+          "message": "Go to the dark sofa instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "table",
+              "new_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the red floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "First go to the bathtub, then continue the original task.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "bathtub",
+              "resume_goal": "sofa_dark"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "bathtub"
+        },
+        {
+          "type": "message",
+          "message": "Go to the light sofa instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_dark",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the blue floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Instead of the light sofa, go to the dining table.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "table"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "subgoal_then_replace_zh_island_0",
+      "group_id": "subgoal_then_replace",
+      "language": "zh",
+      "order": 0,
+      "initial_instruction": "前往厨房岛台。",
+      "reference_initial_goal": "island",
+      "events": [
+        {
+          "type": "message",
+          "message": "先去深色沙发，再继续原任务。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "sofa_dark",
+              "resume_goal": "island"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "sofa_dark"
+        },
+        {
+          "type": "message",
+          "message": "改去独立浴缸。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "island",
+              "new_goal": "bathtub"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开蓝色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "不用去独立浴缸了，改去浅色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bathtub",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开红色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "改去厨房岛台。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "island"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "subgoal_then_replace_zh_island_1",
+      "group_id": "subgoal_then_replace",
+      "language": "zh",
+      "order": 1,
+      "initial_instruction": "前往厨房岛台。",
+      "reference_initial_goal": "island",
+      "events": [
+        {
+          "type": "message",
+          "message": "先去深色沙发，再继续原任务。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "sofa_dark",
+              "resume_goal": "island"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "sofa_dark"
+        },
+        {
+          "type": "message",
+          "message": "改去独立浴缸。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "island",
+              "new_goal": "bathtub"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开蓝色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "不用去独立浴缸了，改去浅色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bathtub",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开红色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "改去厨房岛台。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "island"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "subgoal_then_replace_zh_bed_0",
+      "group_id": "subgoal_then_replace",
+      "language": "zh",
+      "order": 0,
+      "initial_instruction": "前往金属床。",
+      "reference_initial_goal": "bed",
+      "events": [
+        {
+          "type": "message",
+          "message": "先去深色沙发，再继续原任务。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "sofa_dark",
+              "resume_goal": "bed"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "sofa_dark"
+        },
+        {
+          "type": "message",
+          "message": "改去独立浴缸。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bed",
+              "new_goal": "bathtub"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开蓝色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "不用去独立浴缸了，改去浅色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bathtub",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开红色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "改去金属床。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "bed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "subgoal_then_replace_zh_bed_1",
+      "group_id": "subgoal_then_replace",
+      "language": "zh",
+      "order": 1,
+      "initial_instruction": "前往金属床。",
+      "reference_initial_goal": "bed",
+      "events": [
+        {
+          "type": "message",
+          "message": "先去深色沙发，再继续原任务。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "sofa_dark",
+              "resume_goal": "bed"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "sofa_dark"
+        },
+        {
+          "type": "message",
+          "message": "改去独立浴缸。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bed",
+              "new_goal": "bathtub"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开蓝色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "不用去独立浴缸了，改去浅色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bathtub",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开红色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "改去金属床。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "bed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "subgoal_then_replace_zh_table_0",
+      "group_id": "subgoal_then_replace",
+      "language": "zh",
+      "order": 0,
+      "initial_instruction": "前往餐桌。",
+      "reference_initial_goal": "table",
+      "events": [
+        {
+          "type": "message",
+          "message": "先去深色沙发，再继续原任务。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "sofa_dark",
+              "resume_goal": "table"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "sofa_dark"
+        },
+        {
+          "type": "message",
+          "message": "改去独立浴缸。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "table",
+              "new_goal": "bathtub"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开蓝色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "不用去独立浴缸了，改去浅色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bathtub",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开红色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "改去餐桌。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "table"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "subgoal_then_replace_zh_table_1",
+      "group_id": "subgoal_then_replace",
+      "language": "zh",
+      "order": 1,
+      "initial_instruction": "前往餐桌。",
+      "reference_initial_goal": "table",
+      "events": [
+        {
+          "type": "message",
+          "message": "先去深色沙发，再继续原任务。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "sofa_dark",
+              "resume_goal": "table"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "sofa_dark"
+        },
+        {
+          "type": "message",
+          "message": "改去独立浴缸。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "table",
+              "new_goal": "bathtub"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开蓝色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "不用去独立浴缸了，改去浅色沙发。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bathtub",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "继续原任务，避开红色区域。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "改去餐桌。",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "table"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "subgoal_then_replace_en_island_0",
+      "group_id": "subgoal_then_replace",
+      "language": "en",
+      "order": 0,
+      "initial_instruction": "Go to the kitchen island.",
+      "reference_initial_goal": "island",
+      "events": [
+        {
+          "type": "message",
+          "message": "First go to the dark sofa, then continue the original task.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "sofa_dark",
+              "resume_goal": "island"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "sofa_dark"
+        },
+        {
+          "type": "message",
+          "message": "Go to the bathtub instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "island",
+              "new_goal": "bathtub"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the blue floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Instead of the bathtub, go to the light sofa.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bathtub",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the red floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Go to the kitchen island instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "island"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "subgoal_then_replace_en_island_1",
+      "group_id": "subgoal_then_replace",
+      "language": "en",
+      "order": 1,
+      "initial_instruction": "Go to the kitchen island.",
+      "reference_initial_goal": "island",
+      "events": [
+        {
+          "type": "message",
+          "message": "First go to the dark sofa, then continue the original task.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "sofa_dark",
+              "resume_goal": "island"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "sofa_dark"
+        },
+        {
+          "type": "message",
+          "message": "Go to the bathtub instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "island",
+              "new_goal": "bathtub"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the blue floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Instead of the bathtub, go to the light sofa.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bathtub",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the red floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Go to the kitchen island instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "island"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "subgoal_then_replace_en_bed_0",
+      "group_id": "subgoal_then_replace",
+      "language": "en",
+      "order": 0,
+      "initial_instruction": "Go to the metal bed.",
+      "reference_initial_goal": "bed",
+      "events": [
+        {
+          "type": "message",
+          "message": "First go to the dark sofa, then continue the original task.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "sofa_dark",
+              "resume_goal": "bed"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "sofa_dark"
+        },
+        {
+          "type": "message",
+          "message": "Go to the bathtub instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bed",
+              "new_goal": "bathtub"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the blue floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Instead of the bathtub, go to the light sofa.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bathtub",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the red floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Go to the metal bed instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "bed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "subgoal_then_replace_en_bed_1",
+      "group_id": "subgoal_then_replace",
+      "language": "en",
+      "order": 1,
+      "initial_instruction": "Go to the metal bed.",
+      "reference_initial_goal": "bed",
+      "events": [
+        {
+          "type": "message",
+          "message": "First go to the dark sofa, then continue the original task.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "sofa_dark",
+              "resume_goal": "bed"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "sofa_dark"
+        },
+        {
+          "type": "message",
+          "message": "Go to the bathtub instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bed",
+              "new_goal": "bathtub"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the blue floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Instead of the bathtub, go to the light sofa.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bathtub",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the red floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Go to the metal bed instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "bed"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "subgoal_then_replace_en_table_0",
+      "group_id": "subgoal_then_replace",
+      "language": "en",
+      "order": 0,
+      "initial_instruction": "Go to the dining table.",
+      "reference_initial_goal": "table",
+      "events": [
+        {
+          "type": "message",
+          "message": "First go to the dark sofa, then continue the original task.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "sofa_dark",
+              "resume_goal": "table"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "sofa_dark"
+        },
+        {
+          "type": "message",
+          "message": "Go to the bathtub instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "table",
+              "new_goal": "bathtub"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the blue floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Instead of the bathtub, go to the light sofa.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bathtub",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the red floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Go to the dining table instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "table"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "subgoal_then_replace_en_table_1",
+      "group_id": "subgoal_then_replace",
+      "language": "en",
+      "order": 1,
+      "initial_instruction": "Go to the dining table.",
+      "reference_initial_goal": "table",
+      "events": [
+        {
+          "type": "message",
+          "message": "First go to the dark sofa, then continue the original task.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "insert_subgoal",
+              "subgoal": "sofa_dark",
+              "resume_goal": "table"
+            }
+          }
+        },
+        {
+          "type": "complete_subgoal",
+          "goal_id": "sofa_dark"
+        },
+        {
+          "type": "message",
+          "message": "Go to the bathtub instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "table",
+              "new_goal": "bathtub"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the blue floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_blue"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Instead of the bathtub, go to the light sofa.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "bathtub",
+              "new_goal": "sofa_light"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Keep the destination, but avoid the red floor region.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "add_avoid_region",
+              "region_id": "region_red"
+            }
+          }
+        },
+        {
+          "type": "message",
+          "message": "Go to the dining table instead.",
+          "prediction": {
+            "status": "ok",
+            "task_update": {
+              "operation": "replace_goal",
+              "old_goal": "sofa_light",
+              "new_goal": "table"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
