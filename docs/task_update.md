@@ -191,7 +191,9 @@ python -m scripts.task_update score \
 dev/test 各 216 条公共请求已冻结，单独评价缺失上下文、猜中答案和歧义误执行。
 真实 dev 的 216 条记录已核对，决策正确数 latest/history/state 分别为 34/72、21/72、52/72，
 详见 [dev 结果](qwen35_pairs_dev_results_2026-11-05.md)。同设置 test 也已完成，分别为 36/72、25/72、46/72；
-详见 [test 阶段结论](qwen35_pairs_test_results_2026-11-05.md)。下一步分别研究历史组织和拒绝判断；连续模型状态与导航接入仍待实现。
+详见 [test 阶段结论](qwen35_pairs_test_results_2026-11-05.md)。
+[历史组织与拒绝判断消融入口](task_update_ablation.md) 已实现并完成 CPU 预览；下一步执行两个 dev 模型批次并统一比较。
+连续模型状态与导航接入仍待实现。
 
 ## 5. 指标与失败处理
 
@@ -214,12 +216,14 @@ dev/test 各 216 条公共请求已冻结，单独评价缺失上下文、猜中
 ```bash
 python -m unittest tests.test_task_update -v
 python -m unittest tests.test_predict_task_updates -v
+python -m unittest tests.test_task_update_ablation -v
 python -m unittest discover -s tests -v
 ```
 
 专项测试覆盖答案隔离、别名歧义、中英文三类更新、旧约束和恢复目标保留、事务失败、严格 JSON、
 上下文失败分母、请求冻结、外部响应缺失/错位、导出导入一致性和拒绝覆盖。
-任务更新专项 20 项、预测客户端专项 8 项、成对评测专项 11 项通过；全项目在 `habitat` 环境 155 项通过，核心环境通过并跳过 62 项依赖测试。
+任务更新专项 20 项、预测客户端专项 8 项、成对评测专项 11 项、提示消融专项 11 项通过；
+全项目在 `habitat` 环境 166 项通过，核心环境通过并跳过 62 项依赖测试。
 测试使用 CPU 假模拟器，没有启动真实 GPU 导航。
 本轮核心接口、规则、评价、脚本、样例、测试及相关说明可以提交为：
 `feat: add isolated language task update contracts and offline evaluation`。

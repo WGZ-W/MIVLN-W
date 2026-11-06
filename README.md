@@ -266,6 +266,11 @@ The 216-request test run is also audited: scores are 36/72, 25/72 and 46/72;
 state handles 46/48 clear updates but correctly rejects none of the 24 ambiguous
 or unknown region requests. See [dev results](docs/qwen35_pairs_dev_results_2026-11-05.md)
 and [test results and next steps](docs/qwen35_pairs_test_results_2026-11-05.md).
+Controlled prompt ablations are available through `python -m scripts.task_update_ablation`:
+prepare inputs without inference, then audit and rescore baseline, history-timeline,
+and refusal-check runs with identical model controls and candidates. See
+[the ablation commands](docs/task_update_ablation.md); CPU checks are complete,
+while the two new model batches remain to be run.
 
 ## Project layout
 
