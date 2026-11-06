@@ -282,7 +282,11 @@ Each branch carries its own applied model updates; history receives its own exec
 feedback, and state receives its resulting symbolic state. Twenty-four synthetic
 dialogues provide six updates and one completion notice each, totaling 288 model
 requests across history/state. CPU rules, failure injection and causal replay are
-validated; real model runs remain pending. See [the rollout guide](docs/task_update_rollout.md).
+validated. The real 288-request Qwen run is now audited: exact updates and states
+are 144/144 for state and 124/144 for history; entire dialogues are 24/24 and 19/24.
+Five history operation errors leave persistent state errors. See
+[the rollout results](docs/qwen35_rollout_dev_results_2026-11-06.md) and
+[the rollout guide](docs/task_update_rollout.md).
 
 ## Project layout
 

@@ -158,7 +158,8 @@ dev/test 是本轮预先指定的语义组分区，作者已了解此前同类�
 见 [提示消融命令](task_update_ablation.md)。历史 dev 变体已审计：history 从 21/72 升至 39/72，
 但显式替换退化、歧义拒绝未解决，见 [历史消融结果](qwen35_history_ablation_dev_results_2026-11-06.md)。
 拒绝变体和三组比较已完成，latest/history/state 为 35/72、27/72、53/72，见 [三条件分析](qwen35_prompt_ablation_dev_results_2026-11-06.md)。
-当前优先开展明确更新，已实现 [连续状态传递入口](task_update_rollout.md)并完成 CPU 验收，下一步执行真实模型批次。
+当前优先开展明确更新，[连续状态传递入口](task_update_rollout.md)的 288 次真实调用已审计，state/history 更新及状态正确为 144/144、124/144，
+见 [连续实验结果](qwen35_rollout_dev_results_2026-11-06.md)。下一步新增措辞和禁区位置验证配置，复用现有执行入口。
 独立的可回答性与拒绝诊断仍未实现，暂列后续。
 后续调参使用 dev；已观察的 test 作为回归集，新增效果结论需要新的冻结验证组。
 
