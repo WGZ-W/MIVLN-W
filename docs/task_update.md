@@ -23,7 +23,8 @@
 latest/history/state 完整正确分别为 15/18、15/18、16/18，详见 [本轮结果与限制](qwen35_task_update_results_2026-11-05.md)。
 视觉落地、完整对话记忆、任务版本和主动求助仍待实现。
 [HSSD 模型更新回调与三条件入口](language_navigation.md)已完成目标替换真实 GPU 单例，Oracle/model 成功、Ignore 按预期失败，
-见 [结果及视频一致性](hssd_language_results_2026-11-09.md)。后续多任务、其他介入类型与视觉落地仍待验证。
+见 [结果及视频一致性](hssd_language_results_2026-11-09.md)。反向沙发→岛台任务也已通过，见 [反向结果](hssd_language_reverse_results_2026-11-09.md)。
+下一步补齐统一批量入口；其他介入类型与视觉落地仍待验证。
 
 ## 1. 公共输入与三种上下文
 

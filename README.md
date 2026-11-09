@@ -297,6 +297,10 @@ smoke run passed: Oracle/model reach the sofa and Ignore correctly fails at the
 old goal. Correct model updates yield identical Oracle/model trajectories and
 video hashes with the shared navigator. See [the smoke results](docs/hssd_language_results_2026-11-09.md)
 and [the navigation integration guide](docs/language_navigation.md).
+The reverse sofa-to-island task also passed: both model and Oracle take 57 actions
+over 8.549 m, stopping 0.114 m from the new goal; Ignore correctly fails. These
+two directional smoke tasks validate integration, with a batch entry still
+pending. See [the reverse results](docs/hssd_language_reverse_results_2026-11-09.md).
 
 ## Project layout
 

@@ -2,6 +2,7 @@
 
 更新日期：2026-11-09。模型回调、三条件单例、真实 GPU 运行及独立验收已完成，见 [单例结果与视频一致性](hssd_language_results_2026-11-09.md)。
 Qwen 正确更新至深色沙发，Oracle/model 均成功，Ignore 按预期失败。Oracle/model 共享后端且更新相同，轨迹、帧文件及视频哈希均一致。
+反向沙发→岛台任务也已通过真实验收，Oracle/model 均为 57 动作、8.549 m、终点误差 0.114 m，见 [反向结果](hssd_language_reverse_results_2026-11-09.md)。
 入口：`python -m scripts.language_navigation`。本阶段固定结构化状态输入，不继续比较 history/state，也不扩展拒绝实验。
 
 ## 1. 当前实现与信息边界
@@ -128,5 +129,6 @@ python -m scripts.language_navigation videos \
 `outputs/`、场景、权重与凭据不提交，不自动暂存、提交或推送。
 
 本单例与三段视频的编码/帧数已核对，用户反馈 Oracle/model 画面相近，原始帧和哈希核查证实完全相同；未补写完整人工播放审核记录。
-下一步按相同入口准备其他固定任务，反向任务命令见 [结果中的下一步方案](hssd_language_results_2026-11-09.md)。10 任务/30 episode 的统一批量运行与汇总入口尚未实现；
+正反两个任务已通过；反向三段视频尚未导出，命令及下一步批量方案见 [反向结果](hssd_language_reverse_results_2026-11-09.md)。
+10 任务/30 episode 的统一批量运行与汇总入口尚未实现；
 禁区和子目标的模型闭环也属于后续阶段，当前仅目标替换。
