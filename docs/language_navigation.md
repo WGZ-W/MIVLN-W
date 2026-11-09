@@ -130,5 +130,6 @@ python -m scripts.language_navigation videos \
 
 本单例与三段视频的编码/帧数已核对，用户反馈 Oracle/model 画面相近，原始帧和哈希核查证实完全相同；未补写完整人工播放审核记录。
 正反两个任务已通过；反向三段视频尚未导出，命令及下一步批量方案见 [反向结果](hssd_language_reverse_results_2026-11-09.md)。
-10 任务/30 episode 的统一批量运行与汇总入口尚未实现；
+10 任务/30 episode 的[统一批量入口](language_navigation_dataset.md)现已实现并通过 CPU 检查，
+`outputs/hssd_language_batch_001` 已核验复用正反两个任务；剩余 8 任务/24 episode 待 GPU 执行。
 禁区和子目标的模型闭环也属于后续阶段，当前仅目标替换。

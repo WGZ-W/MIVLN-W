@@ -299,8 +299,22 @@ video hashes with the shared navigator. See [the smoke results](docs/hssd_langua
 and [the navigation integration guide](docs/language_navigation.md).
 The reverse sofa-to-island task also passed: both model and Oracle take 57 actions
 over 8.549 m, stopping 0.114 m from the new goal; Ignore correctly fails. These
-two directional smoke tasks validate integration, with a batch entry still
-pending. See [the reverse results](docs/hssd_language_reverse_results_2026-11-09.md).
+two directional smoke tasks validate integration. See [the reverse results](docs/hssd_language_reverse_results_2026-11-09.md).
+The unified `scripts.language_navigation_dataset` entry now freezes all ten
+tasks/30 episode slots and independently verifies read-only reuse of those two
+tasks. The local batch is prepared with six audited reused episodes; eight new
+tasks/24 episodes await GPU execution. Run it in the Habitat environment:
+
+```bash
+python -m scripts.language_navigation_dataset run --output-dir outputs/hssd_language_batch_001 --gpu-id 2
+python -m scripts.language_navigation_dataset summarize --output-dir outputs/hssd_language_batch_001
+python -m scripts.language_navigation_dataset videos --output-dir outputs/hssd_language_batch_001 --fps 10
+```
+
+See [the batch guide](docs/language_navigation_dataset.md) for frozen model
+settings, failure accounting, safe reuse and the interpretation of provisional
+scores. Model updates and navigation success are reported separately; navigation
+still uses privileged geometry.
 
 ## Project layout
 

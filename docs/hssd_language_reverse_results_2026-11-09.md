@@ -90,7 +90,9 @@ python -m scripts.language_navigation videos \
 随后应补齐 10 个固定任务的统一批量运行与汇总入口。现有两个已审计任务可在验证配置、提示、模型参数和代码一致后复用；
 余下八个任务计划 24 个 episode、八次模型请求，保持 middle 时机和当前评分，失败仍计入完整分母。
 验收输出应含固定计划清单、逐条件状态、更新正确率、联合导航成功率、调用耗时和错误阶段。
-**批量入口尚未实现**，现有单例 prepare/run/summarize 可复用；若要研究语言目标选择，还应另行设计至少三个审核候选的对照配置。
+本次结果审计时批量入口尚未实现；后续已完成[统一批量入口](language_navigation_dataset.md)的 CPU 检查，
+并在 `outputs/hssd_language_batch_001` 只读复用这两个任务，剩余 8 任务/24 episode 待 GPU 执行。
+若要研究语言目标选择，还应另行设计至少三个审核候选的对照配置。
 本次没有执行新 GPU 条件或导出视频。
 
 反向结果与相关状态说明可作为文档提交：`docs: record reverse HSSD language navigation results`。
