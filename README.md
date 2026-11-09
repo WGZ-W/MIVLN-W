@@ -302,19 +302,55 @@ over 8.549 m, stopping 0.114 m from the new goal; Ignore correctly fails. These
 two directional smoke tasks validate integration. See [the reverse results](docs/hssd_language_reverse_results_2026-11-09.md).
 The unified `scripts.language_navigation_dataset` entry now freezes all ten
 tasks/30 episode slots and independently verifies read-only reuse of those two
-tasks. The local batch is prepared with six audited reused episodes; eight new
-tasks/24 episodes await GPU execution. Run it in the Habitat environment:
+tasks. All ten tasks/30 episodes now pass independent auditing: model updates
+and navigation succeed in 10/10 cases, and Ignore correctly fails in 10/10.
+All 30 videos pass encoding/frame-count checks; full manual review is pending.
+The completed batch can be re-audited in the Habitat environment:
 
 ```bash
-python -m scripts.language_navigation_dataset run --output-dir outputs/hssd_language_batch_001 --gpu-id 2
 python -m scripts.language_navigation_dataset summarize --output-dir outputs/hssd_language_batch_001
-python -m scripts.language_navigation_dataset videos --output-dir outputs/hssd_language_batch_001 --fps 10
 ```
 
 See [the batch guide](docs/language_navigation_dataset.md) for frozen model
 settings, failure accounting, safe reuse and the interpretation of provisional
 scores. Model updates and navigation success are reported separately; navigation
 still uses privileged geometry.
+
+The next controlled experiment expands each task from two to five reviewed
+candidates with unchanged messages, poses, timing, model controls and scoring.
+`scripts.language_navigation_candidates` prepares/checks/runs/summarizes the
+new batch without changing the hash-frozen original engines. The local
+`outputs/hssd_language_candidates5_001` batch is now complete: all 30 new episodes
+pass independent auditing, model updates and navigation succeed in 10/10 cases,
+and no distractors are selected. Oracle/Ignore trajectories and observations
+match the original batch. All 30 videos pass encoding/frame-count checks.
+The following commands show the completed workflow; existing outputs must not
+be rerun or overwritten:
+
+```bash
+python -m scripts.language_navigation_candidates run --output-dir outputs/hssd_language_candidates5_001 --gpu-id 2
+python -m scripts.language_navigation_candidates summarize --output-dir outputs/hssd_language_candidates5_001
+python -m scripts.language_navigation_candidates videos --output-dir outputs/hssd_language_candidates5_001 --fps 10
+```
+
+See [the five-candidate guide](docs/language_navigation_candidates.md) for paired
+controls, executable distractors and acceptance criteria. This does not add visual
+grounding, paraphrases, candidate-order ablations or further history/state tests.
+
+The next offline `scripts.language_navigation_robustness` study freezes ten
+source tasks times three English wordings times ascending/reversed order: 60 NEW
+requests. Only the public export is read for inference; private references are
+rebuilt for scoring, with correctness and consistency reported separately.
+The local development requests are prepared; no real inference has run yet:
+
+```bash
+python -m scripts.language_navigation_robustness predict --requests-dir outputs/hssd_language_robustness_dev_001/public --output-dir outputs/hssd_language_robustness_qwen_001
+python -m scripts.language_navigation_robustness score --prepared-dir outputs/hssd_language_robustness_dev_001 --run-dir outputs/hssd_language_robustness_qwen_001 --output-dir outputs/hssd_language_robustness_eval_001
+```
+
+These commands need the original model service and can use the standard-library
+`mivln` environment. See [the wording/order guide](docs/language_navigation_robustness.md)
+for raw-run auditing, fixed denominators and limits of authored development text.
 
 ## Project layout
 

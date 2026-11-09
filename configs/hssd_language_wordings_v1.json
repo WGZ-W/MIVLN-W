@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "kind": "hssd_explicit_replacement_wordings_v1",
+  "language": "en",
+  "provenance": "Authored development paraphrases of existing reviewed descriptions; not independently collected human annotations. No new visual attributes or ambiguity/refusal cases.",
+  "templates": {
+    "paraphrase_1": "Please change the destination to {goal}; the old destination is cancelled.",
+    "paraphrase_2": "Do not continue to the previous destination. Your new destination is {goal}."
+  },
+  "goals": {
+    "target_020": {
+      "source_description": "the bed with a gold metal frame",
+      "paraphrase_1": "the gold-colored metal-frame bed",
+      "paraphrase_2": "the bed whose metal frame is gold in color"
+    },
+    "target_047": {
+      "source_description": "the oval freestanding bathtub",
+      "paraphrase_1": "the oval tub that stands on its own",
+      "paraphrase_2": "the freestanding bath with an oval shape"
+    },
+    "target_051": {
+      "source_description": "the wooden kitchen island with drawers",
+      "paraphrase_1": "the kitchen island made of wood with drawers",
+      "paraphrase_2": "the wooden island unit in the kitchen that has drawers"
+    },
+    "target_054": {
+      "source_description": "the dark sofa",
+      "paraphrase_1": "the dark-colored couch",
+      "paraphrase_2": "the couch that is dark in color"
+    },
+    "target_112": {
+      "source_description": "the rectangular dining table with fruit on top",
+      "paraphrase_1": "the rectangular dining table topped with fruit",
+      "paraphrase_2": "the rectangular table used for dining, with fruit on its surface"
+    }
+  }
+}

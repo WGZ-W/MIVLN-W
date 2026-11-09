@@ -1,5 +1,10 @@
 # HSSD 语言更新导航：统一批量入口
 
+状态更新：两候选批次已完成 10 任务/30 episode，独立验收全部通过；模型更新和闭环均为 10/10，
+Ignore 10/10 按预期失败。30 段视频已核对编码和帧数，人工播放审核待记录。
+下述运行命令保留用于理解流程，已有批次勿重跑或重导出视频。
+下一实验为[五候选受控扩展](language_navigation_candidates.md)，已完成 CPU 准备，新的 30 个 episode 待运行。
+
 入口：`python -m scripts.language_navigation_dataset`。本阶段将原有单任务协议扩展至固定集合，
 不改变模型提示、候选、策略更新或评价规则。模型预测语言更新，导航后端使用特权坐标、网格和物体中心；
 实验用于验证更新能否可靠驱动导航闭环，暂不声称视觉落地或跨场景泛化。
@@ -36,11 +41,11 @@ python -m scripts.language_navigation_dataset prepare \
 后续添加可选视频不影响已冻结的原始证据。
 
 `task_001` 和 `task_002` 的 6 个 episode 已核验复用；
-**下一次运行只新增 `task_003`～`task_010`：8 个任务、24 个 episode、8 次模型调用**。
+本批次当时新增 `task_003`～`task_010`：8 个任务、24 个 episode、8 次模型调用，现已全部验收。
 旧任务 Habitat GPU 分别为 0、2；跨任务允许 GPU 不同并逐项记录，同一任务的三个条件保持一致。
 客户端参数相同不保证服务端权重或部署配置自动相同，继续使用原 Qwen3.5-9B 服务及其启动配置。
 
-## 3. 下一步执行：完成剩余 GPU 实验
+## 3. GPU 实验命令（本批次已完成）
 
 前提：原 Qwen 服务在 `http://127.0.0.1:8000/v1` 提供 `qwen3.5-9b`，使用同一权重和服务配置；
 场景、网格、审核目录、旧运行目录仍位于原路径。模型服务保持在其独立环境运行。
@@ -104,7 +109,8 @@ Habitat 环境全量 **219 项通过**；核心环境发现 219 项，跳过 70 
 真实两任务在禁止创建 Simulator 和调用模型的条件下重新验收通过，旧原始证据哈希未改变。
 准备后快照为 2/10 个已审核任务、6/30 个 episode、8 个待运行任务，`results_provisional=true`；
 此时模型正确数显示 2/10 只是固定分母的进度，不能解读为最终 20% 准确率。
-剩余 GPU 实验和完整视频审核待执行。
+后续 GPU 实验已完成，顶层汇总为 10/10 任务、30/30 episode、`results_provisional=false`；
+完整视频人工播放审核待记录。五候选实验见[新入口指南](language_navigation_candidates.md)。
 
 代码、测试和指南可作为一次功能提交：`feat: add batch HSSD language navigation with verified result reuse`。
 `outputs/`、场景、权重与凭据不提交。
