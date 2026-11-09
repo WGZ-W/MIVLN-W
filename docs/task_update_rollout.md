@@ -128,5 +128,6 @@ python -m scripts.task_update_rollout score \
 前轮尚未提交的消融结果文档建议先单独提交，避免与新功能混在一起。
 CPU 验收与真实模型批次审计已完成；结果报告及相关状态说明可单独提交为：
 `docs: record sequential task update results and error propagation`。
-下一步补充明确更新的新措辞与禁区位置对照，新验证配置尚待创建，现有运行/评分入口可复用，见 [结果中的方案](qwen35_rollout_dev_results_2026-11-06.md)。
-之后再研究恢复机制与固定导航后端接入；拒绝相关诊断暂列后续工作。所有 `outputs/`、模型权重与数据继续忽略，不自动暂存、提交或推送。
+此前提出的新措辞与禁区位置对照见 [结果中的方案](qwen35_rollout_dev_results_2026-11-06.md)，当前进一步 history/state 验证暂缓。
+当前已实现 [HSSD 模型更新回调及三条件单例](language_navigation.md)，CPU 验收完成，下一步运行真实 GPU 目标替换闭环。
+其他介入类型、批量导航及拒绝相关诊断仍列后续。所有 `outputs/`、模型权重与数据继续忽略，不自动暂存、提交或推送。

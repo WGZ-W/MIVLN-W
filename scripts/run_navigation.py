@@ -8,6 +8,8 @@ import json
 import math
 import platform
 import sys
+import time
+from copy import deepcopy
 from pathlib import Path
 
 import habitat_sim
@@ -23,6 +25,8 @@ from scripts import terminal_view
 from mivln.regions import trajectory_violations
 from scripts.avoid_planner import AvoidFollower, AvoidPlanningError, validate_settings
 from mivln.subgoals import COMPLETE_SUBGOAL, completion_is_valid, sequence_satisfied
+from mivln.navigation_updates import (apply_navigation_prediction, navigation_request,
+                                     validate_navigation_candidates)
 
 
 def make_configuration(config: dict, scene: Path, gpu_id: int) -> habitat_sim.Configuration:
@@ -260,10 +264,24 @@ def save_instance_diagnostic(output, sim, agent, target, goal_id, min_pixels):
 
 
 def run(config: dict, scene: Path, gpu_id: int, output: Path,
-        intervention_policy: str = "follow") -> dict:
-    if intervention_policy not in ("follow", "ignore"):
-        raise ValueError("intervention_policy must be 'follow' or 'ignore'")
+        intervention_policy: str = "follow", task_updater=None) -> dict:
+    """Run navigation; model callbacks see only a public task-update request.
+
+    Existing follow/ignore behavior is unchanged. The model branch supports one
+    replace_goal event and keeps evaluator truth separate from its prediction.
+    """
+    if intervention_policy not in ("follow", "ignore", "model"):
+        raise ValueError("intervention_policy must be follow, ignore or model")
+    if ((intervention_policy == "model" and not callable(task_updater))
+            or (intervention_policy != "model" and task_updater is not None)):
+        raise ValueError("Provide a callable task_updater exactly for the model policy")
     validate_config(config)
+    if intervention_policy == "model":
+        if (len(config.get("events", [])) != 1
+                or config["events"][0]["task_update"].get("operation") != "replace_goal"
+                or config.get("subgoal_protocol") is not None):
+            raise ValueError("Model navigation currently supports one replace_goal event")
+        validate_navigation_candidates(config.get("language_candidates"), configured_goals(config))
     goals = {goal: np.asarray(position, dtype=np.float32)
              for goal, position in configured_goals(config).items()}
     events = [InterventionEvent.from_dict(value) for value in config.get("events", [])]
@@ -325,7 +343,8 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
         episode = {
             **config, **provenance, "gpu_device_id": gpu_id,
             "navmesh_settings": mesh_settings, "loaded_rigid_objects": loaded_objects,
-            "controller": ("ignore_intervention_oracle" if intervention_policy == "ignore"
+            "controller": ("language_update_oracle_navigator" if intervention_policy == "model" else
+                           "ignore_intervention_oracle" if intervention_policy == "ignore"
                            else "oracle_dynamic_planner") if events else "oracle_greedy_geodesic_follower",
             "intervention_policy": intervention_policy,
             "events": [event.to_dict() for event in events],
@@ -363,6 +382,9 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
         subgoal_protocol = config.get("subgoal_protocol") is not None
         inserted_goal = (events[0].task_update["subgoal"] if subgoal_protocol and events else None)
         subgoal_completions = []
+        policy_updates = []
+        if intervention_policy == "model":
+            write_json(output / "policy_updates.json", policy_updates)
         for step in range(config["max_steps"]):
             # Events update task state between actions. The simulator and agent
             # stay alive; recreating a follower clears only its planner state.
@@ -375,6 +397,22 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
                 if intervention_policy == "follow":
                     for event in delivered:
                         policy_state.apply_update(event.task_update)
+                elif intervention_policy == "model":
+                    for event in delivered:
+                        # Truth has received the labelled event, but the callback
+                        # gets ONLY the message, public catalog and policy state.
+                        request = navigation_request(step, event.utterance, config["language_candidates"], policy_state)
+                        started = time.perf_counter()
+                        try:
+                            raw, metadata, call_error = task_updater(deepcopy(request))
+                        except (OSError, ValueError, TypeError, KeyError, IndexError) as failure:
+                            raw, metadata, call_error = None, {}, f"Callback failed: {type(failure).__name__}"
+                        elapsed = time.perf_counter() - started
+                        policy_state, record = apply_navigation_prediction(policy_state, request, raw, metadata, call_error)
+                        record.update(event_id=event.event_id, delivered_step=step, callback_seconds=elapsed)
+                        policy_updates.append(record)
+                        # Persist the raw outcome before any simulator action.
+                        write_json(output / "policy_updates.json", policy_updates)
                 for event in delivered:
                     event_log.append({
                         **event.to_dict(), "delivered_step": step,
@@ -383,6 +421,7 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
                         "policy_task_state_before": before_policy,
                         "policy_task_state_after": policy_state.to_dict(),
                         "ignored_by_policy": intervention_policy == "ignore",
+                        **({"model_update_index": len(policy_updates) - 1} if intervention_policy == "model" else {}),
                     })
                 updated_path = shortest_path(sim.pathfinder, agent.get_state().position,
                                              goals[task_state.active_goal])
@@ -391,8 +430,16 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
                     break
                 post_intervention_optimal_length = float(updated_path.geodesic_distance)
                 pre_intervention_path_length = path_length
-                if intervention_policy == "follow":
+                if (intervention_policy == "follow" or (intervention_policy == "model"
+                        and policy_updates[-1]["outcome"] == "applied")):
                     goal = goals[policy_state.active_goal]
+                    # A valid but incorrect model target must produce ITS OWN
+                    # route; the evaluator's updated_path is never a fallback.
+                    policy_path = (updated_path if policy_state.active_goal == task_state.active_goal
+                                   else shortest_path(sim.pathfinder, agent.get_state().position, goal))
+                    if policy_path is None:
+                        termination, planner_error = "planner_error", "Policy goal unreachable after update"
+                        break
                     if policy_state.active_constraints:
                         try:
                             follower = AvoidFollower(sim, agent, goal, policy_state.active_constraints, config)
@@ -401,7 +448,7 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
                             break
                         replans.append({"step": step, "goal_id": policy_state.active_goal, **follower.route})
                     else:
-                        replans.append(path_record(updated_path, agent.get_state().position, goal,
+                        replans.append(path_record(policy_path, agent.get_state().position, goal,
                                                    policy_state.active_goal, step))
                         follower = habitat_sim.nav.GreedyGeodesicFollower(
                             sim.pathfinder, agent, goal_radius=config["success_radius_m"], stop_key="STOP"
@@ -431,7 +478,7 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
             # This is the Oracle's first action planned for the updated target;
             # it measures planner compliance, not learned language understanding.
             if (intervention_step is not None and first_compliant_action_step is None
-                    and intervention_policy == "follow"
+                    and intervention_policy in ("follow", "model")
                     and policy_state.to_dict() == task_state.to_dict()):
                 first_compliant_action_step = step
             if action == "STOP" and subgoal_protocol and policy_state.suspended_goals:
@@ -590,6 +637,11 @@ def run(config: dict, scene: Path, gpu_id: int, output: Path,
             "terminal_diagnostics_sha256": (hashlib.sha256((output / "terminal_diagnostics.json").read_bytes()).hexdigest()
                                              if diagnose_terminal else None),
         }
+        if intervention_policy == "model":
+            metrics.update({"model_update_count": len(policy_updates),
+                "model_update_applied_count": sum(record["outcome"] == "applied" for record in policy_updates),
+                "model_call_failure_count": sum(record["outcome"] == "call_failed" for record in policy_updates),
+                "model_callback_seconds": sum(record["callback_seconds"] for record in policy_updates)})
         if avoid_experiment or config.get("avoid_planner"):
             metrics.update({"constraint_violation_count": len(violations),
                             "constraint_compliance": not violations,

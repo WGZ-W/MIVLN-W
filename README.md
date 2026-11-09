@@ -288,6 +288,13 @@ Five history operation errors leave persistent state errors. See
 [the rollout results](docs/qwen35_rollout_dev_results_2026-11-06.md) and
 [the rollout guide](docs/task_update_rollout.md).
 
+Language updates can now drive the HSSD navigation loop through
+`python -m scripts.language_navigation`. A reviewed task is run as matched
+Oracle/model/Ignore branches; the model receives only public candidates and
+policy state, and failed predictions never fall back to labels. CPU preparation,
+causal auditing and 19 regression tests are complete; the real three-episode
+smoke run remains pending. See [the navigation integration guide](docs/language_navigation.md).
+
 ## Project layout
 
 ```text
