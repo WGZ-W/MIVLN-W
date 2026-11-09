@@ -129,5 +129,6 @@ python -m scripts.task_update_rollout score \
 CPU 验收与真实模型批次审计已完成；结果报告及相关状态说明可单独提交为：
 `docs: record sequential task update results and error propagation`。
 此前提出的新措辞与禁区位置对照见 [结果中的方案](qwen35_rollout_dev_results_2026-11-06.md)，当前进一步 history/state 验证暂缓。
-当前已实现 [HSSD 模型更新回调及三条件单例](language_navigation.md)，CPU 验收完成，下一步运行真实 GPU 目标替换闭环。
+当前 [HSSD 模型更新回调及三条件单例](language_navigation.md)的真实 GPU 验收已完成，Oracle/model 成功，Ignore 按预期失败，
+见 [闭环结果](hssd_language_results_2026-11-09.md)。下一步扩展其他固定任务。
 其他介入类型、批量导航及拒绝相关诊断仍列后续。所有 `outputs/`、模型权重与数据继续忽略，不自动暂存、提交或推送。

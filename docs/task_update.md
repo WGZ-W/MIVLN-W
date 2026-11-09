@@ -22,7 +22,8 @@
 预测客户端已用模拟服务测试，并完成首次真实 Qwen3.5-9B 开发样例运行；
 latest/history/state 完整正确分别为 15/18、15/18、16/18，详见 [本轮结果与限制](qwen35_task_update_results_2026-11-05.md)。
 视觉落地、完整对话记忆、任务版本和主动求助仍待实现。
-[HSSD 模型更新回调与三条件入口](language_navigation.md)已实现目标替换单例，完成 CPU 验收，真实 GPU 批次待运行。
+[HSSD 模型更新回调与三条件入口](language_navigation.md)已完成目标替换真实 GPU 单例，Oracle/model 成功、Ignore 按预期失败，
+见 [结果及视频一致性](hssd_language_results_2026-11-09.md)。后续多任务、其他介入类型与视觉落地仍待验证。
 
 ## 1. 公共输入与三种上下文
 
@@ -202,7 +203,8 @@ dev/test 各 216 条公共请求已冻结，单独评价缺失上下文、猜中
 见 [三条件分析](qwen35_prompt_ablation_dev_results_2026-11-06.md)。当前优先明确更新，拒绝相关独立诊断暂列后续。
 连续更新与因果重放入口已完成真实模型验收，五次 history 操作错误及后续状态残留已逐条检查，见 [结果分析](qwen35_rollout_dev_results_2026-11-06.md)。
 当前优先导航闭环，进一步 history/state 对照暂缓。[目标替换模型回调及实验入口](language_navigation.md)已通过 CPU 验收，
-下一步运行 Oracle/model/Ignore 三条件 GPU 单例；新措辞/位置配置与其他介入类型的模型导航仍待后续。
+真实单例已独立复算通过，下一步扩展其他固定任务，见 [单例结果与下一步](hssd_language_results_2026-11-09.md)；
+统一批量入口、新措辞/位置配置与其他介入类型的模型导航仍待后续。
 
 ## 5. 指标与失败处理
 

@@ -119,7 +119,7 @@ python -m scripts.task_update_ablation compare \
 此前提出的独立可回答性诊断见 [结果中的方案](qwen35_prompt_ablation_dev_results_2026-11-06.md)，当前暂列后续。
 当前优先明确更新，[连续状态传递入口](task_update_rollout.md)及真实模型 288 次预测均已审计，state/history 更新及状态正确为 144/144、124/144，
 见 [连续实验结果](qwen35_rollout_dev_results_2026-11-06.md)。当前进一步 history/state 验证暂缓，
-已完成 [HSSD 模型更新回调与三条件入口](language_navigation.md)的 CPU 验收，下一步运行真实 GPU 目标替换单例。
+已完成 [HSSD 模型更新回调与三条件入口](language_navigation.md)的真实 GPU 单例验收，见 [结果](hssd_language_results_2026-11-09.md)，下一步扩展其他固定任务。
 该入口传递模型更新后的实际状态，不回填参考状态；模型生成完整状态快照和接入导航闭环仍属于后续阶段。
 
 可提交提示模块、客户端扩展、比较入口、专项测试及说明，建议：

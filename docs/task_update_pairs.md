@@ -160,7 +160,8 @@ dev/test 是本轮预先指定的语义组分区，作者已了解此前同类�
 拒绝变体和三组比较已完成，latest/history/state 为 35/72、27/72、53/72，见 [三条件分析](qwen35_prompt_ablation_dev_results_2026-11-06.md)。
 当前优先开展明确更新，[连续状态传递入口](task_update_rollout.md)的 288 次真实调用已审计，state/history 更新及状态正确为 144/144、124/144，
 见 [连续实验结果](qwen35_rollout_dev_results_2026-11-06.md)。当前进一步 history/state 验证暂缓，
-已完成 [HSSD 模型更新回调与三条件目标替换入口](language_navigation.md)的 CPU 验收，下一步运行真实 GPU 单例。
+已完成 [HSSD 模型更新回调与三条件目标替换入口](language_navigation.md)的真实 GPU 单例验收，
+见 [结果与视频一致性](hssd_language_results_2026-11-09.md)。下一步扩展其他固定任务。
 独立的可回答性与拒绝诊断仍未实现，暂列后续。
 后续调参使用 dev；已观察的 test 作为回归集，新增效果结论需要新的冻结验证组。
 

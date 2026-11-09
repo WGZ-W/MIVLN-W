@@ -1,6 +1,7 @@
 # HSSD 语言更新驱动导航：目标替换闭环
 
-更新日期：2026-11-09。模型回调、三条件单例和独立验收已实现；CPU 准备及测试完成，真实 GPU/模型批次待用户运行。
+更新日期：2026-11-09。模型回调、三条件单例、真实 GPU 运行及独立验收已完成，见 [单例结果与视频一致性](hssd_language_results_2026-11-09.md)。
+Qwen 正确更新至深色沙发，Oracle/model 均成功，Ignore 按预期失败。Oracle/model 共享后端且更新相同，轨迹、帧文件及视频哈希均一致。
 入口：`python -m scripts.language_navigation`。本阶段固定结构化状态输入，不继续比较 history/state，也不扩展拒绝实验。
 
 ## 1. 当前实现与信息边界
@@ -54,11 +55,11 @@ python -m scripts.language_navigation prepare \
 `model_request_preview.json` 和 `cpu_check.json`。后两者是 CPU 检查产物，不是模型预测或 GPU 验收。
 准备和检查均没有创建 Simulator 或调用模型；源场景、网格、审核及参考文件保持原样。
 
-## 4. 下一步：用户运行真实三条件单例
+## 4. 已完成的真实三条件单例
 
 前提：原 Qwen3.5-9B 服务保持可用，在本机 8000 端口暴露 `qwen3.5-9b`；模型部署见 [本地部署](qwen35_local.md)。
 导航使用 `habitat` 环境，模型服务在其独立环境运行。将 GPU 0 替换为分配给本次 Habitat 的 GPU 编号。
-以下输出目录当前尚未创建，每次实验必须使用新目录。
+以下输出目录已存在，命令保留用于复现；重复实验必须使用新目录。
 
 ```bash
 cd /mnt/sdc/weiguanzhao/MIVLN-W
@@ -119,11 +120,13 @@ python -m scripts.language_navigation videos \
 新增 19 项测试覆盖白名单隔离、错误目标实际规划、事务失败、无 Oracle 回填、动作前投递、位姿连续、
 真实请求体记录、接口失败不重试、固定三条件分母及提示/实例掩码篡改检查。全部使用 CPU 假模拟器与 HTTP 桩。
 `python -m unittest discover -s tests -q`：Habitat 环境 **202 项通过**；核心环境发现 202 项并跳过 70 项原生依赖测试。
-真实模型驱动导航的效果仍待上面的 GPU 单例，不能用 CPU 桩结果代替。
+真实 GPU 单例现已完成并独立复算通过，模型回调约 1.099 秒；两成功分支均为 51 动作、约 7 m，距沙发停止点约 0.232 m。
+此结果验证一个已知候选任务的闭环，不代表多任务或视觉落地成绩。
 
 建议将回调模块、导航循环修改、实验入口、测试及相关文档作为一个功能提交：
 `feat: add model update callbacks and HSSD navigation experiments`。
 `outputs/`、场景、权重与凭据不提交，不自动暂存、提交或推送。
 
-单例通过后，先人工查看三段视频，再按相同入口准备其他固定任务。10 任务/30 episode 的统一批量运行与汇总入口尚未实现；
+本单例与三段视频的编码/帧数已核对，用户反馈 Oracle/model 画面相近，原始帧和哈希核查证实完全相同；未补写完整人工播放审核记录。
+下一步按相同入口准备其他固定任务，反向任务命令见 [结果中的下一步方案](hssd_language_results_2026-11-09.md)。10 任务/30 episode 的统一批量运行与汇总入口尚未实现；
 禁区和子目标的模型闭环也属于后续阶段，当前仅目标替换。

@@ -292,8 +292,11 @@ Language updates can now drive the HSSD navigation loop through
 `python -m scripts.language_navigation`. A reviewed task is run as matched
 Oracle/model/Ignore branches; the model receives only public candidates and
 policy state, and failed predictions never fall back to labels. CPU preparation,
-causal auditing and 19 regression tests are complete; the real three-episode
-smoke run remains pending. See [the navigation integration guide](docs/language_navigation.md).
+causal auditing and 19 regression tests are complete. The real three-episode
+smoke run passed: Oracle/model reach the sofa and Ignore correctly fails at the
+old goal. Correct model updates yield identical Oracle/model trajectories and
+video hashes with the shared navigator. See [the smoke results](docs/hssd_language_results_2026-11-09.md)
+and [the navigation integration guide](docs/language_navigation.md).
 
 ## Project layout
 
