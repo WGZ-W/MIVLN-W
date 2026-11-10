@@ -341,7 +341,10 @@ The next offline `scripts.language_navigation_robustness` study freezes ten
 source tasks times three English wordings times ascending/reversed order: 60 NEW
 requests. Only the public export is read for inference; private references are
 rebuilt for scoring, with correctness and consistency reported separately.
-The local development requests are prepared; no real inference has run yet:
+The real 60-call development run has passed independent re-scoring: 60/60 updates
+and states are correct; all 30 order pairs, 20 wording groups and ten task groups
+are both consistent and correct. No call failures or distractor selections occur.
+The following commands describe that completed workflow; do not overwrite its outputs:
 
 ```bash
 python -m scripts.language_navigation_robustness predict --requests-dir outputs/hssd_language_robustness_dev_001/public --output-dir outputs/hssd_language_robustness_qwen_001
@@ -351,6 +354,22 @@ python -m scripts.language_navigation_robustness score --prepared-dir outputs/hs
 These commands need the original model service and can use the standard-library
 `mivln` environment. See [the wording/order guide](docs/language_navigation_robustness.md)
 for raw-run auditing, fixed denominators and limits of authored development text.
+
+`scripts.language_navigation_representatives` now prepares five destination-based
+representatives using `paraphrase_2/reversed`. Selection takes the smallest task
+ID per destination, independent of prediction success. Existing physics and raw
+model-response auditors are reused under a new versioned loader that preserves
+candidate order. The local preparation is ready; 15 NEW navigation episodes and
+five NEW model calls await execution in Habitat:
+
+```bash
+python -m scripts.language_navigation_representatives run --output-dir outputs/hssd_language_representatives_001 --gpu-id 2
+python -m scripts.language_navigation_representatives summarize --output-dir outputs/hssd_language_representatives_001
+python -m scripts.language_navigation_representatives videos --output-dir outputs/hssd_language_representatives_001 --fps 10
+```
+
+See [the representative navigation guide](docs/language_navigation_representatives.md).
+Online outputs are fresh calls and are never filled from the offline predictions.
 
 ## Project layout
 
