@@ -1,5 +1,9 @@
 # 改写与逆序候选：代表性导航验证
 
+状态更新（2026-11-10）：五个代表任务、15 个全新 episode 已独立验收，模型更新/闭环及在线/离线一致均为 5/5，
+Oracle/Ignore 与原五候选的轨迹和观测匹配。15 段视频编码及帧数通过检查，完整人工播放仍待记录。
+本页运行命令已执行，已有输出不重跑或覆盖。当前转为 [Benchmark 优先交付](benchmark_release_plan.md)，新增模型回调后置。
+
 入口：`python -m scripts.language_navigation_representatives`。
 前一阶段 60 条离线更新已经独立复算通过：更新/状态 60/60，顺序配对 30/30、措辞组 20/20、任务组 10/10 均正确。
 本阶段将固定的 `paraphrase_2` 与 `reversed` 接入真实导航，验证动作前更新、策略执行和实测终点是否一致。
@@ -112,7 +116,8 @@ Oracle 与 Ignore 的全程物理轨迹对照原五候选批次；跨批次观�
 其中四项使用原生依赖加假模拟器/假 HTTP，实际运行导航循环，检查回调收到逆序改写、一次调用、不重置、
 接口失败不回填，以及合法错误目标真正进入自己的重规划路径。
 Habitat 全量 **271 项通过**；核心环境发现 271 项并跳过 74 项原生依赖测试。
-真实来源的 CPU 准备通过，代表性十五个 GPU episode 尚未执行。
+真实来源的 CPU 准备及十五个 GPU episode 均已独立验收；输出目录的 `result_review_2026-11-10.json`
+和 `video_review_2026-11-10.json` 保存本次复核记录。
 
 建议本轮入口、测试和文档一次提交：`feat: add representative paraphrase navigation validation`。
 `outputs/`、场景、权重和凭据不提交。

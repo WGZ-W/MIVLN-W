@@ -1,5 +1,9 @@
 # Repository Guidelines
 
+## Project Priority
+
+Build the reproducible Benchmark first: prioritize task protocols, input visibility, unified task manifests, independent evaluation, data quality, scene-disjoint splits, and release tooling. Oracle execution is valid for task feasibility and evaluator validation; predicting structured updates with a model is not a prerequisite for Benchmark construction. Schedule additional model integrations and method ablations around concrete Benchmark needs rather than making them the default next step. Structured task state is an evaluator representation and a possible baseline design, not a mandatory internal representation for every participating agent. The current focus is human-initiated interventions; active help-seeking and asynchronous replies remain later extensions. See `docs/benchmark_release_plan.md` for the current delivery order.
+
 ## Project Structure & Module Organization
 
 - `mivln/`: simulator-independent task state, intervention delivery, and evaluation.

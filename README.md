@@ -2,6 +2,14 @@
 
 MIVLN is a minimal research scaffold for **mixed-initiative vision-and-language navigation**. It focuses first on the task logic needed when a robot is navigating autonomously and a human changes the task during execution.
 
+The current priority is to build a reproducible **Benchmark**: consolidate task
+protocols, data quality, independent evaluation, scene-disjoint splits and release
+tooling. Oracle runs validate feasibility and scoring; model-predicted task
+updates are optional baseline designs, not a prerequisite for building the
+Benchmark. This is still a single-scene research prototype. See the
+[Benchmark delivery plan](docs/benchmark_release_plan.md) for milestones and the
+next unified manifest/audit task; additional model callbacks are deferred.
+
 The core task logic is simulator-independent, with optional Habitat-Sim navigation experiments:
 
 ```text
@@ -359,8 +367,11 @@ for raw-run auditing, fixed denominators and limits of authored development text
 representatives using `paraphrase_2/reversed`. Selection takes the smallest task
 ID per destination, independent of prediction success. Existing physics and raw
 model-response auditors are reused under a new versioned loader that preserves
-candidate order. The local preparation is ready; 15 NEW navigation episodes and
-five NEW model calls await execution in Habitat:
+candidate order. All 15 new navigation episodes and five new model calls now
+pass independent auditing; online updates/states match the offline results in
+5/5 cases, and Oracle/Ignore match the original physical controls. All 15 videos
+pass encoding/frame-count checks. These are completed workflow commands; do not
+rerun or overwrite their outputs:
 
 ```bash
 python -m scripts.language_navigation_representatives run --output-dir outputs/hssd_language_representatives_001 --gpu-id 2

@@ -1,5 +1,8 @@
 # 独立语言任务更新：契约、规则基线与离线评测
 
+当前优先级（2026-11-10）：先构建 Benchmark 的统一任务清单、只读审计、协议与输入权限、数据质量及场景划分，
+见 [Benchmark 交付路线](benchmark_release_plan.md)。本页语言模型实验作为已有基线保留；新增模型禁区/子目标回调后置。
+
 更新日期：2026-11-09。入口 `python -m scripts.task_update` 仅使用标准库，不需要 Habitat、GPU、模型权重或 API。
 预测客户端 `python -m scripts.predict_task_updates` 同样只用标准库，但真实推理需要用户配置模型服务。
 这一步落实“语言理解与增量更新”接口，支持三类操作、旧状态保留检查及外部模型预测导入。
@@ -27,7 +30,8 @@ latest/history/state 完整正确分别为 15/18、15/18、16/18，详见 [本�
 [统一批量入口](language_navigation_dataset.md)的 10 任务/30 episode 已全部独立验收，模型更新和闭环均为 10/10。
 [五候选扩展](language_navigation_candidates.md)的 30 个新 episode 已独立验收，更新和闭环均为 10/10，无干扰项误选。
 [措辞/顺序对照](language_navigation_robustness.md)已完成 60 条真实更新并独立复算全部正确；
-[五目的地代表导航](language_navigation_representatives.md)已准备，改写/逆序的 15 个新 episode 待运行；其他介入类型的模型闭环与视觉落地仍待验证。
+[五目的地代表导航](language_navigation_representatives.md)的 15 个 episode 已独立验收，更新、闭环及在线/离线一致均为 5/5；
+其他介入类型的模型闭环与视觉落地仍待验证，不作为当前 Benchmark 协议/数据整理的前置条件。
 
 ## 1. 公共输入与三种上下文
 
@@ -209,8 +213,9 @@ dev/test 各 216 条公共请求已冻结，单独评价缺失上下文、猜中
 当前优先导航闭环，进一步 history/state 对照暂缓。[目标替换模型回调及实验入口](language_navigation.md)已通过 CPU 验收，
 真实单例已独立复算通过，下一步扩展其他固定任务，见 [单例结果与下一步](hssd_language_results_2026-11-09.md)；
 [统一批量入口](language_navigation_dataset.md)和[五候选目标选择](language_navigation_candidates.md)均已完成真实验收；
-[措辞/候选顺序离线对照](language_navigation_robustness.md)已验收 60/60 更新与状态正确；下一步执行已准备的
-[代表性改写/逆序导航](language_navigation_representatives.md)，其他介入类型的模型导航仍待后续。
+[措辞/候选顺序离线对照](language_navigation_robustness.md)已验收 60/60 更新与状态正确，
+[代表性改写/逆序导航](language_navigation_representatives.md)的 15 个 episode 也已验收。
+下一步按 [Benchmark 交付路线](benchmark_release_plan.md)整理三类任务清单与独立审计，模型扩展后置。
 
 ## 5. 指标与失败处理
 
