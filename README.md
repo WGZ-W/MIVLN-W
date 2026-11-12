@@ -7,8 +7,10 @@ protocols, data quality, independent evaluation, scene-disjoint splits and relea
 tooling. Oracle runs validate feasibility and scoring; model-predicted task
 updates are optional baseline designs, not a prerequisite for building the
 Benchmark. This is still a single-scene research prototype. See the
-[Benchmark delivery plan](docs/benchmark_release_plan.md) for milestones and the
-next unified manifest/audit task; additional model callbacks are deferred.
+[Benchmark delivery plan](docs/benchmark_release_plan.md) for milestones, the
+[unified manifest/audit](docs/benchmark_audit.md), and the first
+[three-task protocol draft](docs/benchmark_task_protocol_v1.md). Input contracts
+are next; additional model callbacks are deferred.
 
 The core task logic is simulator-independent, with optional Habitat-Sim navigation experiments:
 

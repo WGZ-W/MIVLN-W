@@ -1,5 +1,10 @@
 # MIVLN Task Definition — Version 0.1
 
+This document preserves the historical replacement-only protocol. The first
+three-task Benchmark specification is available as a Chinese review draft in
+[MI-VLN task protocol v1](benchmark_task_protocol_v1.md); it does not retroactively
+change these results or imply that the unified public interface is implemented.
+
 ## Research setting
 
 The robot navigates autonomously toward a language-specified goal. During execution, a human supervisor may issue an asynchronous natural-language intervention that changes the active task. Version 0.1 isolates task updating from perception and low-level navigation.
