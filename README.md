@@ -11,8 +11,9 @@ Benchmark. This is still a single-scene research prototype. See the
 [unified manifest/audit](docs/benchmark_audit.md), and the first
 [three-task protocol draft](docs/benchmark_task_protocol_v1.md). The
 [input permissions table](docs/benchmark_input_permissions_v1.md) defines component
-boundaries; public schemas and isolation contracts are next. Additional model
-callbacks are deferred.
+boundaries. [Public U/G message contracts](docs/benchmark_public_inputs.md) provide
+CPU-only schema/export checks; runtime integration and process isolation remain.
+Additional model callbacks are deferred.
 
 The core task logic is simulator-independent, with optional Habitat-Sim navigation experiments:
 

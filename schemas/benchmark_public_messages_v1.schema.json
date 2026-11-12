@@ -1,0 +1,977 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MI-VLN public U/G messages v1",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "contract": {
+          "const": "mivln_public_messages_v1"
+        },
+        "track": {
+          "const": "U"
+        },
+        "phase": {
+          "const": "initialize"
+        },
+        "session_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        },
+        "message_id": {
+          "type": "string",
+          "pattern": "^pub_[0-9a-f]{24}$"
+        },
+        "step": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "enum": [
+                "latest",
+                "history",
+                "state"
+              ]
+            },
+            "context_source": {
+              "enum": [
+                "none",
+                "received_message_history",
+                "public_language_constructed",
+                "provided_initial_goal_then_policy_rollout",
+                "model_rollout"
+              ]
+            },
+            "candidate_goals": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "goal_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "aliases": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "goal_id",
+                  "description",
+                  "aliases"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1
+            },
+            "candidate_regions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "region_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "aliases": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "region_id",
+                  "description",
+                  "aliases"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0
+            }
+          },
+          "required": [
+            "mode",
+            "context_source",
+            "candidate_goals",
+            "candidate_regions"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schema_version",
+        "contract",
+        "track",
+        "phase",
+        "session_id",
+        "message_id",
+        "step",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "contract": {
+          "const": "mivln_public_messages_v1"
+        },
+        "track": {
+          "const": "U"
+        },
+        "phase": {
+          "const": "intervention"
+        },
+        "session_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        },
+        "message_id": {
+          "type": "string",
+          "pattern": "^pub_[0-9a-f]{24}$"
+        },
+        "step": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "request": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "schema_version": {
+                      "const": 1,
+                      "type": "integer"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "pattern": "^(nav_|pub_)[0-9a-f]{24}$"
+                    },
+                    "mode": {
+                      "const": "latest"
+                    },
+                    "message": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "candidate_goals": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "goal_id": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                          },
+                          "description": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "aliases": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "minItems": 1
+                          }
+                        },
+                        "required": [
+                          "goal_id",
+                          "description",
+                          "aliases"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "minItems": 1
+                    },
+                    "candidate_regions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "region_id": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                          },
+                          "description": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "aliases": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "minItems": 1
+                          }
+                        },
+                        "required": [
+                          "region_id",
+                          "description",
+                          "aliases"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "minItems": 0
+                    },
+                    "context": {
+                      "type": "object",
+                      "properties": {},
+                      "required": [],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "schema_version",
+                    "request_id",
+                    "mode",
+                    "message",
+                    "candidate_goals",
+                    "candidate_regions",
+                    "context"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "schema_version": {
+                      "const": 1,
+                      "type": "integer"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "pattern": "^(nav_|pub_)[0-9a-f]{24}$"
+                    },
+                    "mode": {
+                      "const": "history"
+                    },
+                    "message": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "candidate_goals": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "goal_id": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                          },
+                          "description": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "aliases": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "minItems": 1
+                          }
+                        },
+                        "required": [
+                          "goal_id",
+                          "description",
+                          "aliases"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "minItems": 1
+                    },
+                    "candidate_regions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "region_id": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                          },
+                          "description": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "aliases": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "minItems": 1
+                          }
+                        },
+                        "required": [
+                          "region_id",
+                          "description",
+                          "aliases"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "minItems": 0
+                    },
+                    "context": {
+                      "type": "object",
+                      "properties": {
+                        "initial_instruction": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "message_history": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "minItems": 0
+                        }
+                      },
+                      "required": [
+                        "initial_instruction",
+                        "message_history"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "schema_version",
+                    "request_id",
+                    "mode",
+                    "message",
+                    "candidate_goals",
+                    "candidate_regions",
+                    "context"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "schema_version": {
+                      "const": 1,
+                      "type": "integer"
+                    },
+                    "request_id": {
+                      "type": "string",
+                      "pattern": "^(nav_|pub_)[0-9a-f]{24}$"
+                    },
+                    "mode": {
+                      "const": "state"
+                    },
+                    "message": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "candidate_goals": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "goal_id": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                          },
+                          "description": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "aliases": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "minItems": 1
+                          }
+                        },
+                        "required": [
+                          "goal_id",
+                          "description",
+                          "aliases"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "minItems": 1
+                    },
+                    "candidate_regions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "region_id": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                          },
+                          "description": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "aliases": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "minItems": 1
+                          }
+                        },
+                        "required": [
+                          "region_id",
+                          "description",
+                          "aliases"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "minItems": 0
+                    },
+                    "context": {
+                      "type": "object",
+                      "properties": {
+                        "previous_state": {
+                          "type": "object",
+                          "properties": {
+                            "active_goal": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                            },
+                            "suspended_goals": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                              },
+                              "minItems": 0
+                            },
+                            "active_constraints": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                              },
+                              "minItems": 0
+                            },
+                            "completed_subgoals": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                              },
+                              "minItems": 0
+                            },
+                            "cancelled_goals": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                              },
+                              "minItems": 0
+                            },
+                            "status": {
+                              "enum": [
+                                "active",
+                                "paused",
+                                "completed",
+                                "failed"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "active_goal",
+                            "suspended_goals",
+                            "active_constraints",
+                            "completed_subgoals",
+                            "cancelled_goals",
+                            "status"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "previous_state"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "schema_version",
+                    "request_id",
+                    "mode",
+                    "message",
+                    "candidate_goals",
+                    "candidate_regions",
+                    "context"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "required": [
+            "request"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schema_version",
+        "contract",
+        "track",
+        "phase",
+        "session_id",
+        "message_id",
+        "step",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "contract": {
+          "const": "mivln_public_messages_v1"
+        },
+        "track": {
+          "const": "G"
+        },
+        "phase": {
+          "const": "initialize"
+        },
+        "session_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        },
+        "message_id": {
+          "type": "string",
+          "pattern": "^pub_[0-9a-f]{24}$"
+        },
+        "step": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "initial_instruction": {
+              "type": "string",
+              "minLength": 1
+            },
+            "candidate_goals": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "goal_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "aliases": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "goal_id",
+                  "description",
+                  "aliases"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1
+            },
+            "goal_geometry": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "goal_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                  },
+                  "stop_position": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    },
+                    "minItems": 3,
+                    "maxItems": 3
+                  }
+                },
+                "required": [
+                  "goal_id",
+                  "stop_position"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1
+            },
+            "map_ref": {
+              "type": "object",
+              "properties": {
+                "asset_id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{32}$"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "required": [
+                "asset_id",
+                "sha256"
+              ],
+              "additionalProperties": false
+            },
+            "pose": {
+              "type": "object",
+              "properties": {
+                "position": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "rotation_xyzw": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 4,
+                  "maxItems": 4
+                }
+              },
+              "required": [
+                "position",
+                "rotation_xyzw"
+              ],
+              "additionalProperties": false
+            },
+            "limits": {
+              "type": "object",
+              "properties": {
+                "max_steps": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "forward_step_m": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "turn_angle_degrees": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "success_radius_m": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "agent_radius_m": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "required": [
+                "max_steps",
+                "forward_step_m",
+                "turn_angle_degrees",
+                "success_radius_m",
+                "agent_radius_m"
+              ],
+              "additionalProperties": false
+            },
+            "actions": {
+              "const": [
+                "move_forward",
+                "turn_left",
+                "turn_right",
+                "STOP",
+                "COMPLETE_SUBGOAL"
+              ]
+            }
+          },
+          "required": [
+            "initial_instruction",
+            "candidate_goals",
+            "goal_geometry",
+            "map_ref",
+            "pose",
+            "limits",
+            "actions"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schema_version",
+        "contract",
+        "track",
+        "phase",
+        "session_id",
+        "message_id",
+        "step",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "contract": {
+          "const": "mivln_public_messages_v1"
+        },
+        "track": {
+          "const": "G"
+        },
+        "phase": {
+          "const": "observation"
+        },
+        "session_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        },
+        "message_id": {
+          "type": "string",
+          "pattern": "^pub_[0-9a-f]{24}$"
+        },
+        "step": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "pose": {
+              "type": "object",
+              "properties": {
+                "position": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "rotation_xyzw": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 4,
+                  "maxItems": 4
+                }
+              },
+              "required": [
+                "position",
+                "rotation_xyzw"
+              ],
+              "additionalProperties": false
+            },
+            "collided": {
+              "type": "boolean"
+            },
+            "last_action": {
+              "enum": [
+                "move_forward",
+                "turn_left",
+                "turn_right",
+                "STOP",
+                "COMPLETE_SUBGOAL"
+              ]
+            }
+          },
+          "required": [
+            "pose",
+            "collided",
+            "last_action"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schema_version",
+        "contract",
+        "track",
+        "phase",
+        "session_id",
+        "message_id",
+        "step",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "type": "integer"
+        },
+        "contract": {
+          "const": "mivln_public_messages_v1"
+        },
+        "track": {
+          "const": "G"
+        },
+        "phase": {
+          "const": "intervention"
+        },
+        "session_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        },
+        "message_id": {
+          "type": "string",
+          "pattern": "^pub_[0-9a-f]{24}$"
+        },
+        "step": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "payload": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "minLength": 1
+            },
+            "regions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "region": {
+                    "type": "object",
+                    "properties": {
+                      "region_id": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$"
+                      },
+                      "type": {
+                        "const": "rectangle_xz"
+                      },
+                      "bounds_xz": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        },
+                        "minItems": 2,
+                        "maxItems": 2
+                      },
+                      "floor_y": {
+                        "type": "number"
+                      },
+                      "floor_tolerance_m": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      }
+                    },
+                    "required": [
+                      "region_id",
+                      "type",
+                      "bounds_xz",
+                      "floor_y",
+                      "floor_tolerance_m"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "aliases": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "region",
+                  "description",
+                  "aliases"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 0
+            }
+          },
+          "required": [
+            "message",
+            "regions"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schema_version",
+        "contract",
+        "track",
+        "phase",
+        "session_id",
+        "message_id",
+        "step",
+        "payload"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}
