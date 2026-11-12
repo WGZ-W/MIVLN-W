@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MI-VLN V action envelope v1",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "contract": {
+      "const": "mivln_visual_navigation_v1"
+    },
+    "session_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "request_id": {
+      "type": "string",
+      "pattern": "^vis_[0-9a-f]{24}$"
+    },
+    "step": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "action": {
+      "enum": [
+        "move_forward",
+        "turn_left",
+        "turn_right",
+        "STOP",
+        "COMPLETE_SUBGOAL"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "contract",
+    "session_id",
+    "request_id",
+    "step",
+    "action"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,342 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MI-VLN V RGB request v1",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "contract": {
+      "const": "mivln_visual_navigation_v1"
+    },
+    "track": {
+      "const": "V"
+    },
+    "session_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "request_id": {
+      "type": "string",
+      "pattern": "^vis_[0-9a-f]{24}$"
+    },
+    "step": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "initial_instruction": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observation": {
+      "type": "object",
+      "properties": {
+        "rgb": {
+          "type": "object",
+          "properties": {
+            "asset_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "width": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "media_type": {
+              "const": "image/png"
+            }
+          },
+          "required": [
+            "asset_id",
+            "sha256",
+            "width",
+            "height",
+            "media_type"
+          ],
+          "additionalProperties": false
+        },
+        "collided": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "rgb",
+        "collided"
+      ],
+      "additionalProperties": false
+    },
+    "history": {
+      "type": "object",
+      "properties": {
+        "observations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "step": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "rgb": {
+                "type": "object",
+                "properties": {
+                  "asset_id": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{32}$"
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "width": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "height": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "media_type": {
+                    "const": "image/png"
+                  }
+                },
+                "required": [
+                  "asset_id",
+                  "sha256",
+                  "width",
+                  "height",
+                  "media_type"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "step",
+              "rgb"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "step": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "action": {
+                "enum": [
+                  "move_forward",
+                  "turn_left",
+                  "turn_right",
+                  "STOP",
+                  "COMPLETE_SUBGOAL"
+                ]
+              },
+              "collided": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "step",
+              "action",
+              "collided"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "observations",
+        "actions"
+      ],
+      "additionalProperties": false
+    },
+    "message_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "delivered_step": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "delivered_step",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0,
+      "maxItems": 1
+    },
+    "current_intervention": {
+      "oneOf": [
+        {
+          "const": null
+        },
+        {
+          "type": "object",
+          "properties": {
+            "delivered_step": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "delivered_step",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "history_policy": {
+      "type": "object",
+      "properties": {
+        "strategy": {
+          "const": "recent_stride_v1"
+        },
+        "max_frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "stride": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "strategy",
+        "max_frames",
+        "stride"
+      ],
+      "additionalProperties": false
+    },
+    "observation_profile": {
+      "enum": [
+        "V_RGB_v1",
+        "V_RGB_MARKED_v1"
+      ]
+    },
+    "camera": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "fx": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "fy": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "cx": {
+          "type": "number"
+        },
+        "cy": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "width",
+        "height",
+        "fx",
+        "fy",
+        "cx",
+        "cy"
+      ],
+      "additionalProperties": false
+    },
+    "actions": {
+      "const": [
+        "move_forward",
+        "turn_left",
+        "turn_right",
+        "STOP",
+        "COMPLETE_SUBGOAL"
+      ]
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "max_steps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "remaining_actions": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "forward_step_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "turn_angle_degrees": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "success_radius_m": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "max_steps",
+        "remaining_actions",
+        "forward_step_m",
+        "turn_angle_degrees",
+        "success_radius_m"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "contract",
+    "track",
+    "session_id",
+    "request_id",
+    "step",
+    "initial_instruction",
+    "observation",
+    "history",
+    "message_history",
+    "current_intervention",
+    "history_policy",
+    "observation_profile",
+    "camera",
+    "actions",
+    "limits"
+  ],
+  "additionalProperties": false
+}

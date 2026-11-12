@@ -15,6 +15,10 @@ boundaries. [Public U/G message contracts](docs/benchmark_public_inputs.md) prov
 CPU-only schema/export checks; runtime integration and process isolation remain.
 Additional model callbacks are deferred.
 
+[V RGB request/action contracts](docs/benchmark_visual_inputs.md) now provide
+causal image/action histories, scoped PNG access and visible-marker byte checks
+with synthetic CPU demos. Real scene rendering and navigation integration remain.
+
 The core task logic is simulator-independent, with optional Habitat-Sim navigation experiments:
 
 ```text
