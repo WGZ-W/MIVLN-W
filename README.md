@@ -7,6 +7,9 @@ protocols, data quality, independent evaluation, scene-disjoint splits and relea
 tooling. Oracle runs validate feasibility and scoring; model-predicted task
 updates are optional baseline designs, not a prerequisite for building the
 Benchmark. This is still a single-scene research prototype. See the
+[active two-task scope](docs/benchmark_active_scope.md): goal replacement and
+temporary subgoal insertion/resumption. Avoid-region collection is deferred;
+historical three-task assets and audits remain reproducible. See the
 [Benchmark delivery plan](docs/benchmark_release_plan.md) for milestones, the
 [unified manifest/audit](docs/benchmark_audit.md), and the first
 [three-task protocol draft](docs/benchmark_task_protocol_v1.md). The
