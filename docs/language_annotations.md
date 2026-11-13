@@ -60,7 +60,7 @@ cp outputs/benchmark_language_annotations_001/annotation_sheet.csv /tmp/mivln_an
 python -B -m scripts.language_annotations revise \
   --input-dir outputs/benchmark_language_annotations_001 \
   --sheet /tmp/mivln_annotations.csv \
-  --output-dir outputs/benchmark_language_annotations_002
+  --output-dir outputs/benchmark_language_annotations_edit_001
 ```
 
 输出新版本，不覆盖旧版本。修改初始指令会将该任务三类介入的审核全部置回待审；修改介入只使该条审核失效。
@@ -71,7 +71,7 @@ python -B -m scripts.language_annotations revise \
 从**当前版本**复制 `review_decisions.json`，例如：
 
 ```bash
-cp outputs/benchmark_language_annotations_002/review_decisions.json /tmp/mivln_reviews.json
+cp outputs/benchmark_language_annotations_edit_001/review_decisions.json /tmp/mivln_reviews.json
 ```
 
 审核者结合该版本的 `review_index.md` 和 RGB，填写需要处理的行：
@@ -89,9 +89,9 @@ cp outputs/benchmark_language_annotations_002/review_decisions.json /tmp/mivln_r
 
 ```bash
 python -B -m scripts.language_annotations review \
-  --input-dir outputs/benchmark_language_annotations_002 \
+  --input-dir outputs/benchmark_language_annotations_edit_001 \
   --decisions /tmp/mivln_reviews.json \
-  --output-dir outputs/benchmark_language_annotations_003
+  --output-dir outputs/benchmark_language_annotations_review_001
 ```
 
 不需要改写时，可直接对 `_001` 复核并输出新的版本；每次继续使用最新版本的模板。
@@ -102,12 +102,12 @@ python -B -m scripts.language_annotations review \
 
 ```bash
 python -B -m scripts.language_annotations audit \
-  --input-dir outputs/benchmark_language_annotations_003 \
-  --output-dir outputs/benchmark_language_annotation_audit_002
+  --input-dir outputs/benchmark_language_annotations_review_001 \
+  --output-dir outputs/benchmark_language_annotation_audit_next_001
 
 python -B -m scripts.language_annotations export \
-  --input-dir outputs/benchmark_language_annotations_003 \
-  --output-dir outputs/benchmark_language_export_001
+  --input-dir outputs/benchmark_language_annotations_review_001 \
+  --output-dir outputs/benchmark_language_export_next_001
 ```
 
 审计重放记录、核查版本链及源证据，并记录两份权威文件检查前后的哈希；**审计通过不表示人工审核通过**。
@@ -121,12 +121,22 @@ python -B -m scripts.language_annotations export \
 
 ## 6. 本次验收与下一步
 
-- 真实首批：10 基础任务、40 条待审核语言、30 个计划案例，人工批准 0。
-- `outputs/benchmark_language_annotation_audit_001/audit.json`：来源与权威文件审计通过，检查前后不变。
-- `outputs/benchmark_language_export_check_001/`：导出按预期被拦截，未创建公开语料。
+- 原草稿 `_001`：10 基础任务、40 条待审语言、30 个计划案例；保留原始状态，不回写审核。
+- 原待审审计 `outputs/benchmark_language_annotation_audit_001/audit.json` 通过；`outputs/benchmark_language_export_check_001/` 保留审核前导出阻断的验证。
+- 用户确认“我已审核好文件，采用原模版即可”“40条文本均可，RGB已验证”后，以已有署名 `WGZ` 转录 40 条审核声明。模板原文、作者及来源保持不变，不生成虚假的人工改写事件。
+- 新审核版本 `outputs/benchmark_language_annotations_002/`：40/40 approved、30/30 language-ready；`outputs/benchmark_language_review_submission_001/` 保留决策、用户确认来源和核验报告。审核属于用户声明，不是工具自动完成的语义/视觉判断或身份认证。
+- `outputs/benchmark_language_annotation_audit_002/audit.json`：审核版本只读审计通过；原草稿包及 51 份绑定来源文件前后不变。
+- `outputs/benchmark_language_export_001/`：已导出 30 个离线语言案例，替换/插入/取消各 10 个，共享 10 个基础任务；公开字段及私有映射核验通过。
 - 新增 18 项回归覆盖修订、独立审核、上下文失效、过期哈希、版本链、来源变动、完整分母和公开字段。
 - 全量 358 项在 Habitat 环境通过；核心环境同套件通过，按原生依赖跳过 74 项。未启动渲染或真实模型。
 
-下一步由人工结合现有 RGB 完成第一轮改写与独立复核，先检查 1 个基础任务的 4 条记录，再扩展到全部 10 个。
-验收为：实例唯一、三类义务正确、无私有答案、修订与审核可追溯；全批完成前导出继续阻断。
-随后才冻结新发布时机、接入真实 V 导航及统一评分；多场景/scene-disjoint 划分仍须另行完成。
+可以直接检查当前审核版本，无须重复导入：
+
+```bash
+python -B -m scripts.language_annotations status \
+  --input-dir outputs/benchmark_language_annotations_002
+```
+
+下一步把已审语言绑定到新版本导航任务，明确介入时机、逐步 V 输入与各类型独立评价，先用 CPU 替身验收正确执行、忽略、延迟和错误动作。
+该导航入口仍待实现，之后才安排单基础任务 HSSD 验证；不能将完整离线语料提前交给在线 Agent。
+首批只完成单场景模板语言审核，尚无新语言导航结果或多场景/scene-disjoint 划分，正式发布状态仍为 `release_ready=false`。
