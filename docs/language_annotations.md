@@ -137,6 +137,6 @@ python -B -m scripts.language_annotations status \
   --input-dir outputs/benchmark_language_annotations_002
 ```
 
-下一步把已审语言绑定到新版本导航任务，明确介入时机、逐步 V 输入与各类型独立评价，先用 CPU 替身验收正确执行、忽略、延迟和错误动作。
-该导航入口仍待实现，之后才安排单基础任务 HSSD 验证；不能将完整离线语料提前交给在线 Agent。
+[三类 V 导航入口](benchmark_navigation.md)已实现已审语言绑定、私有 HSSD 配置准备和五条件 CPU 合成闭环，使用明确的新累计路程参考触发版本；原语言版本不变。
+下一步实现真实 Habitat backend，接入实际 RGB、动作及独立实例诊断，再安排单基础任务 HSSD 验证；不能将完整离线语料提前交给在线 Agent。
 首批只完成单场景模板语言审核，尚无新语言导航结果或多场景/scene-disjoint 划分，正式发布状态仍为 `release_ready=false`。

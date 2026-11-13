@@ -27,6 +27,10 @@ three-type intervention drafts from reviewed instances, records independent
 human reviews in new revisions, and gates offline corpus export on full approval.
 Draft generation does not approve language or validate new navigation runs.
 
+[Reviewed three-task V navigation](docs/benchmark_navigation.md) now provides
+source-bound HSSD preparation, a backend/callback loop, and synthetic CPU runs
+with raw-response/PNG replay audits. A real Habitat backend remains to be added.
+
 The core task logic is simulator-independent, with optional Habitat-Sim navigation experiments:
 
 ```text
