@@ -7,12 +7,12 @@ protocols, data quality, independent evaluation, scene-disjoint splits and relea
 tooling. Oracle runs validate feasibility and scoring; model-predicted task
 updates are optional baseline designs, not a prerequisite for building the
 Benchmark. This is still a single-scene research prototype. See the
-[active two-task scope](docs/benchmark_active_scope.md): goal replacement and
-temporary subgoal insertion/resumption. Avoid-region collection is deferred;
+[active three-task scope](docs/benchmark_active_scope.md): goal replacement,
+temporary subgoal insertion/resumption, and [task cancellation with immediate STOP](docs/cancel_task.md). Avoid-region collection is deferred;
 historical three-task assets and audits remain reproducible. See the
 [Benchmark delivery plan](docs/benchmark_release_plan.md) for milestones, the
 [unified manifest/audit](docs/benchmark_audit.md), and the first
-[three-task protocol draft](docs/benchmark_task_protocol_v1.md). The
+[historical three-task protocol draft](docs/benchmark_task_protocol_v1.md). The
 [input permissions table](docs/benchmark_input_permissions_v1.md) defines component
 boundaries. [Public U/G message contracts](docs/benchmark_public_inputs.md) provide
 CPU-only schema/export checks; runtime integration and process isolation remain.
@@ -21,6 +21,11 @@ Additional model callbacks are deferred.
 [V RGB request/action contracts](docs/benchmark_visual_inputs.md) now provide
 causal image/action histories, scoped PNG access and visible-marker byte checks
 with synthetic CPU demos. Real scene rendering and navigation integration remain.
+
+[Language annotation tooling](docs/language_annotations.md) prepares initial and
+three-type intervention drafts from reviewed instances, records independent
+human reviews in new revisions, and gates offline corpus export on full approval.
+Draft generation does not approve language or validate new navigation runs.
 
 The core task logic is simulator-independent, with optional Habitat-Sim navigation experiments:
 
@@ -38,6 +43,8 @@ update task state → stop at bedroom → evaluate success
 
 - `TaskState`: the authoritative dynamic task state.
 - `EventEngine`: deterministic delivery of intervention events.
+- `mivln/cancel_task.py`: opt-in cancellation state, immediate-STOP evaluator and V delivery extension; legacy goal-reaching contracts stay versioned.
+- `scripts/language_annotations.py`: draft/edit/review/audit/export workflow for the active three-task language corpus.
 - `Evaluator`: metrics for the final active goal and intervention response.
 - `scripts/run_demo.py`: a complete target-replacement example.
 - `scripts/run_intervention.py`: matched Habitat control/target-replacement branches and automatic validation.

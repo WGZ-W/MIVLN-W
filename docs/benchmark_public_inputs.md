@@ -3,7 +3,8 @@
 日期：2026-11-12；消息契约：`mivln_public_messages_v1`，外层 `schema_version=1`。
 本步骤实现 [输入权限表](benchmark_input_permissions_v1.md) 中 U 和最小 G 的数据边界，不运行模型或导航。
 
-后续采集先采用 [两类任务范围](benchmark_active_scope.md)，G 区域消息和禁区示例保留作后置兼容性验证。
+后续采集采用 [替换/插入/取消三类范围](benchmark_active_scope.md)，G 区域消息和禁区示例保留作后置兼容性验证。
+取消通过独立 [V 投递与评分扩展](cancel_task.md) 接入；本页旧 U 预测契约不新增取消操作，冻结源哈希保持不变。
 
 ## 1. 已实现范围
 
