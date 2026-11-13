@@ -64,5 +64,6 @@
 4. CPU 替身覆盖正确、忽略、延迟、语义错误动作和非法输出，独立检查替换、插入恢复、取消立即 STOP；合成几何/图像及特权策略单独声明，不能算 HSSD 执行。
 
 审核与导出证据见 [语言工作流](language_annotations.md)，准备/CPU/只读重审命令见 [导航入口](benchmark_navigation.md)。
-下一完整步骤是实现真实 Habitat backend，将实际 RGB、物理动作和独立实例诊断接入该循环；先验收一个基础任务的三类 Oracle/Ignore。真实运行命令尚未实现，不能把 CPU fixture 或离线语料当作真实导航配置。
+[真实 HSSD middle 入口](hssd_visual_navigation.md)的 `task_001` 三类 Oracle/Ignore 六分支已运行并只读重审通过，见[实测结果](hssd_v_middle_results_2026-11-13.md)。
+下一完整步骤是实现 10 个基础任务、60 个 middle 分支的统一批量与汇总，并准备代表视频人工复核；满足来源绑定时复用现有六分支。统一批量命令尚待实现，不能把单任务或 CPU fixture 成绩推广为全任务结果。
 正式大批次发布仍需协议/输入/评分冻结、跨场景划分和真实导航验收；试采集可以先开始并保留修订版本。

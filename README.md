@@ -29,7 +29,8 @@ Draft generation does not approve language or validate new navigation runs.
 
 [Reviewed three-task V navigation](docs/benchmark_navigation.md) now provides
 source-bound HSSD preparation, a backend/callback loop, and synthetic CPU runs
-with raw-response/PNG replay audits. A real Habitat backend remains to be added.
+with raw-response/PNG replay audits. A [real Habitat middle adapter](docs/hssd_visual_navigation.md)
+provides RGB/action/instance wiring; [all six Oracle/Ignore slots passed real-scene acceptance](docs/hssd_v_middle_results_2026-11-13.md).
 
 The core task logic is simulator-independent, with optional Habitat-Sim navigation experiments:
 

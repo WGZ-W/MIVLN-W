@@ -1,7 +1,7 @@
 # 已审语言驱动的三类 V 导航入口
 
 协议：`active_v_navigation_v1`。当前交付真实 HSSD 配置准备、可替换 backend 的 V 循环、CPU 合成验证与原始日志只读重审。
-**真实 Habitat backend、视觉模型适配、进程隔离和正式统一榜单尚未完成。**
+真实 Habitat backend 已由[独立 middle 入口](hssd_visual_navigation.md)接入，六分支 GPU 验收通过；视觉模型适配、进程隔离和正式统一榜单仍待完成。
 入口：`python -B -m scripts.benchmark_navigation`，标准库即可运行，无 GPU/模型调用。
 
 ## 1. 任务及输入边界
@@ -120,6 +120,6 @@ python -B -m unittest tests.test_benchmark_navigation -v
 
 初轮 `_001` 产物保留不覆盖；补充空批次拒绝校验后，按新代码哈希重新准备、执行和重审，当前验收以 `_002` 为准。
 
-下一步实现真实 Habitat backend：复用这套 V 循环，接入实际 RGB/动作/碰撞、网格距离、终点朝向及实例诊断。
-先以 `task_001`、middle 为输入验收三类特权 Oracle/Ignore，保存实际请求、动作、位姿、子目标及 STOP 证据；再接视觉方法。
-真实运行命令尚待实现，当前没有 `habitat`/`run` 子命令。不能用上述 CPU 成绩替代这一步，也不自动安排 GPU 实验。
+[真实 HSSD middle 入口](hssd_visual_navigation.md)已复用本循环接入实际 RGB/动作/碰撞、网格距离、终点朝向及实例诊断；原生参考前缀检查通过。
+其 `task_001 + middle` 三类 Oracle/Ignore 六分支已真实运行并只读重审通过，见[实测结果](hssd_v_middle_results_2026-11-13.md)。下一步实现 10 任务 middle 批量入口，另准备代表视频人工核对，再扩展时机。
+本页原 `scripts.benchmark_navigation` 仍仅保留 prepare/cpu/audit，真实运行使用新增 `scripts.hssd_visual_navigation run`，不改旧模块哈希。上述 CPU 成绩不替代真实 GPU 验收。
