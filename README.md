@@ -34,6 +34,8 @@ provides RGB/action/instance wiring; [all six Oracle/Ignore slots passed real-sc
 The [full-roster middle batch](docs/hssd_v_middle_batch_results_2026-11-16.md)
 passed all 60 acceptance slots across ten bases: 30 Oracle successes and 30
 expected Ignore failures, with six episodes reused and 54 newly executed.
+[V video export and playback review](docs/visual_video_review.md) now provide
+eight ordered RGB clips, sidecar subtitles and frame provenance; all human reviews remain pending.
 
 The core task logic is simulator-independent, with optional Habitat-Sim navigation experiments:
 

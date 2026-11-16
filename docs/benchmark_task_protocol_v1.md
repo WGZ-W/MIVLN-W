@@ -237,7 +237,7 @@ Oracle 可读取正确更新和精确几何，但成绩必须标注特权，不�
 输入权限表见 [v1.0-draft.1](benchmark_input_permissions_v1.md)，数据边界实现见 [U/G 消息契约](benchmark_public_inputs.md)。
 首批 40 条模板语言已依据用户对文本及 RGB 的确认完成审核转录，已导出 30 个离线案例，见[语言工作流](language_annotations.md)；这不代表新语言导航已验收。
 新增[三类 V 导航入口](benchmark_navigation.md)已绑定审核版本、生成新触发口径配置，并用 CPU 替身重放实际动作与合成 RGB，覆盖正确、忽略、延迟、错误完成和非法输出。该新入口不改历史协议或评分。
-[真实 HSSD middle 批量](hssd_v_middle_batch_results_2026-11-16.md)已完成 10 任务、60 个固定分支 GPU 条件验收。下一完整步骤是实现 V 视频导出和人工质检表，核对可见性、顺序与 STOP，再推进跨场景与 early/late；保留完整分母和旧协议。
+[真实 HSSD middle 批量](hssd_v_middle_batch_results_2026-11-16.md)已完成 10 任务/60 分支验收。[V 视频入口](visual_video_review.md)已导出八段并保留待审表，下一完整步骤是人工核对可见性、顺序与 STOP 后导入声明，再推进跨场景与 early/late；保留完整分母和旧协议。
 普通 V 正文无未来消息/私有答案，三类义务按实际动作和证据评价；完整进程隔离及发布评分仍待完成。单任务验收不能替代多场景和全任务验证，禁区及其真实投影后置。
 
 可用项目标准测试发现入口核对已实现的语义；它也提供旧测试夹具所需的导入路径。

@@ -121,5 +121,5 @@ python -B -m unittest tests.test_benchmark_navigation -v
 初轮 `_001` 产物保留不覆盖；补充空批次拒绝校验后，按新代码哈希重新准备、执行和重审，当前验收以 `_002` 为准。
 
 [真实 HSSD middle 入口](hssd_visual_navigation.md)已复用本循环接入实际 RGB/动作/碰撞、网格距离、终点朝向及实例诊断；原生参考前缀检查通过。
-其单任务六分支已验收；后续[10 任务 middle 真实批量](hssd_v_middle_batch_results_2026-11-16.md)已完成 60/60 条件验收。下一步实现 V 资源索引视频导出和人工审核表，再推进跨场景与时机覆盖。
+其单任务六分支及后续[10 任务 middle 全批](hssd_v_middle_batch_results_2026-11-16.md)均已验收。[V 视频入口](visual_video_review.md)已生成八段与待审表，下一步人工播放并导入审核，再推进跨场景与时机覆盖。
 本页原 `scripts.benchmark_navigation` 仍仅保留 prepare/cpu/audit，真实运行使用新增 `scripts.hssd_visual_navigation run`，不改旧模块哈希。上述 CPU 成绩不替代真实 GPU 验收。
