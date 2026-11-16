@@ -138,5 +138,5 @@ python -B -m scripts.language_annotations status \
 ```
 
 [三类 V 导航入口](benchmark_navigation.md)已实现已审语言绑定、私有 HSSD 配置准备和五条件 CPU 合成闭环，使用明确的新累计路程参考触发版本；原语言版本不变。
-[真实 HSSD middle 六分支](hssd_v_middle_results_2026-11-13.md)已运行并只读重审通过；[10 任务批量](hssd_visual_dataset.md)已准备 60 分支，下一步运行其余 54 个并重审。不能将完整离线语料提前交给在线 Agent。
-首批仍是单场景模板语料，目前仅一个基础任务完成新版真实导航验收；其余任务及多场景/scene-disjoint 划分仍待验证，正式发布状态保持 `release_ready=false`。
+[10 任务 middle 真实批量](hssd_v_middle_batch_results_2026-11-16.md)已完成 60/60 条件验收，下一步实现 V 视频导出与人工质检表。不能将完整离线语料提前交给在线 Agent。
+首批仍是单场景模板语料，十个基础任务的 middle 已验证；视觉策略、其他时机和多场景/scene-disjoint 划分仍待验证，正式发布状态保持 `release_ready=false`。

@@ -65,5 +65,5 @@
 
 审核与导出证据见 [语言工作流](language_annotations.md)，准备/CPU/只读重审命令见 [导航入口](benchmark_navigation.md)。
 [真实 HSSD middle 入口](hssd_visual_navigation.md)的 `task_001` 三类 Oracle/Ignore 六分支已运行并只读重审通过，见[实测结果](hssd_v_middle_results_2026-11-13.md)。
-[10 任务 middle 统一批量入口](hssd_visual_dataset.md)已实现，60 个计划分支中 6 个绑定复用、54 个待运行。下一完整步骤是执行新入口的 run + audit，验收全批真实结果，再准备代表视频人工复核；不能把现有单任务或 CPU fixture 成绩推广为全任务结果。
+[10 任务 middle 真实批量](hssd_v_middle_batch_results_2026-11-16.md)已完成 60/60 条件验收，含 6 复用、54 新运行，源文件重审前后不变。下一完整步骤是实现 V 视频导出与人工审核表，先核对 task_001 六分支和 task_007 最长插入恢复样例，再推进跨场景与早/晚覆盖；不能把单场景 Oracle 成绩当作视觉模型或跨场景能力。
 正式大批次发布仍需协议/输入/评分冻结、跨场景划分和真实导航验收；试采集可以先开始并保留修订版本。

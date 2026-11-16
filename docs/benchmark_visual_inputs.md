@@ -115,4 +115,4 @@ demo 固定三个合成场景：替换、禁区、插入恢复。脚本策略只
 在原契约之后，V 会话和 RGB 资源收集已接入下述新版本导航循环，并完成 CPU 模拟器替身与独立日志验收。
 实际 HSSD 接线仍须确认物理动作与图像时序一致、模型只得到获准图像/消息、错误动作按实执行并由独立评价器评分。
 首批三类语言已审核；新增[已审语言三类导航入口](benchmark_navigation.md)已实现 backend/回调循环、HSSD 配置准备和五条件 CPU 合成验证，旧 V 契约及本页历史 demo 不变。
-[真实 HSSD middle backend](hssd_visual_navigation.md)已完成一个基础任务的六分支 GPU 验收，见[实测结果](hssd_v_middle_results_2026-11-13.md)。[10 任务 middle 批量](hssd_visual_dataset.md)已准备 60 分支，下一步运行其余 54 个并重审，再准备代表视频。完整进程隔离与发布评分仍待完成，B1 尚未全部完成。禁区真实投影与持续标记继续后置。
+[真实 HSSD middle 全批](hssd_v_middle_batch_results_2026-11-16.md)已完成 10 任务/60 分支条件验收；下一步实现 V 帧视频导出与人工质检表，再推进跨场景与 early/late。完整进程隔离与发布评分仍待完成，B1 尚未全部完成。禁区真实投影与持续标记继续后置。

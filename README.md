@@ -31,8 +31,9 @@ Draft generation does not approve language or validate new navigation runs.
 source-bound HSSD preparation, a backend/callback loop, and synthetic CPU runs
 with raw-response/PNG replay audits. A [real Habitat middle adapter](docs/hssd_visual_navigation.md)
 provides RGB/action/instance wiring; [all six Oracle/Ignore slots passed real-scene acceptance](docs/hssd_v_middle_results_2026-11-13.md).
-The [full-roster middle batch](docs/hssd_visual_dataset.md) now prepares all ten
-bases with 60 fixed slots, reuses six audited episodes, and schedules 54 new runs.
+The [full-roster middle batch](docs/hssd_v_middle_batch_results_2026-11-16.md)
+passed all 60 acceptance slots across ten bases: 30 Oracle successes and 30
+expected Ignore failures, with six episodes reused and 54 newly executed.
 
 The core task logic is simulator-independent, with optional Habitat-Sim navigation experiments:
 

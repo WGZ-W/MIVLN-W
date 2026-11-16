@@ -69,9 +69,8 @@ Oracle/Ignore 驱动器使用私有正确更新和几何，本批未调用 Qwen 
 不能据此推断其余基础任务、early/late、多场景或端到端视觉策略的表现。
 
 [10 任务 middle 统一批量入口](hssd_visual_dataset.md)已实现，固定每任务三类 × Oracle/Ignore，共 60 个计划分支。
-本次 6 个分支已通过配置/代码/原始证据核对后绑定复用，其他 54 个仍待执行；不覆盖本次结果或删除失败槽位。
-下一步执行新增 `scripts.hssd_visual_dataset run` 及 audit。原单任务入口不接受 `--base-task all`，其 prepare/run/audit 命令仍见 [运行说明](hssd_visual_navigation.md)。
-同时准备代表视频导出和人工播放核对；在 middle 批量通过后扩展 early/late，再开展跨场景建设。
+本次 6 个分支已绑定复用，后续 54 个新分支现已运行，最新[60 分支批量验收](hssd_v_middle_batch_results_2026-11-16.md)通过；原六分支不回写、不覆盖。
+下一步实现 V 视频导出及人工播放审核表，再推进跨场景和 early/late。原单任务入口仍不接受 `--base-task all`，使用方式见 [运行说明](hssd_visual_navigation.md)。
 
 接线代码、回归测试和配套文档现可作为一次完整功能提交：
 `feat: wire middle HSSD visual navigation and independent audit`。
