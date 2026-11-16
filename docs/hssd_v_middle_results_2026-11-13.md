@@ -68,9 +68,9 @@ Oracle/Ignore 驱动器使用私有正确更新和几何，本批未调用 Qwen 
 已完成一个基础任务、一个真实场景、middle 时机下的三类 V 接线验收，包含成功条件和有效负对照。
 不能据此推断其余基础任务、early/late、多场景或端到端视觉策略的表现。
 
-下一步实现 10 个基础任务的 middle 统一批量入口和汇总，固定每任务三类 × Oracle/Ignore，共 60 个计划分支。
-配置/代码/原始证据绑定满足时可复用本次 6 个已验收分支，其他 54 个仍待执行；不覆盖本次结果或删除失败槽位。
-该统一批量入口尚未实现，不能向现有单任务入口传 `--base-task all`。现有单任务 prepare/run/audit 命令见 [运行说明](hssd_visual_navigation.md)。
+[10 任务 middle 统一批量入口](hssd_visual_dataset.md)已实现，固定每任务三类 × Oracle/Ignore，共 60 个计划分支。
+本次 6 个分支已通过配置/代码/原始证据核对后绑定复用，其他 54 个仍待执行；不覆盖本次结果或删除失败槽位。
+下一步执行新增 `scripts.hssd_visual_dataset run` 及 audit。原单任务入口不接受 `--base-task all`，其 prepare/run/audit 命令仍见 [运行说明](hssd_visual_navigation.md)。
 同时准备代表视频导出和人工播放核对；在 middle 批量通过后扩展 early/late，再开展跨场景建设。
 
 接线代码、回归测试和配套文档现可作为一次完整功能提交：

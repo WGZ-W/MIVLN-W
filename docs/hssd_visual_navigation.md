@@ -102,4 +102,4 @@ prepare 不依赖 Habitat；geometry/audit 需要原生 Habitat/NumPy/Pillow，�
 不信任 `metrics.json`/`summary.json`；末尾保存整个运行目录检查前后的哈希快照。
 该审计不独立重新渲染图像，不提供相机来源认证；像素与世界的对应依赖可信采集器，正式隐藏评测隔离仍须完善。
 
-最新验收说明见[实测结果](hssd_v_middle_results_2026-11-13.md)。下一步实现 10 个基础任务、60 个 middle 分支的统一批量与汇总，另准备代表视频导出和人工复核；满足来源绑定时复用现有六分支。统一批量入口尚待实现，之后再覆盖 early/late；当前不增加新模型或时机机制。
+最新验收说明见[实测结果](hssd_v_middle_results_2026-11-13.md)。[10 任务 middle 批量入口](hssd_visual_dataset.md)已实现并准备 60 分支，现有六分支已绑定复用；下一步运行其余 54 个并独立重审。之后准备代表视频人工复核及 early/late，当前不增加新模型或时机机制。

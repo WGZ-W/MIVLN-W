@@ -114,4 +114,4 @@ Control 仅在合成无障碍走廊用欧氏距离作为等价 geodesic 判点�
 新增第三类已纳入[语言标注、审核与版本化导出](language_annotations.md)，用户已确认 40 条原模板文本及 RGB，审核结果已记录并导出三类各 10 个离线案例。审核不回写本取消准备包或旧配置，不表示其 90 个计划导航 episode 已执行。
 并行接入新版本 V 导航：仅支持明确的三类主任务，取消后仍由模型决定动作，独立评价器检查立即 STOP，保存实际请求/动作/位姿。
 [三类统一 V 入口](benchmark_navigation.md)已用 CPU 替身覆盖正确、忽略、延迟、错误完成与非法输出，并保存原始日志独立重放。
-[真实 HSSD middle 六分支验收](hssd_v_middle_results_2026-11-13.md)通过：取消 Oracle 动作 22 立即 STOP，延迟 0、取消后路程 0；Ignore 延迟 20 动作并多走 3.250 m，正确判失败。下一步实现 10 个基础任务的三类 middle 批量与汇总，使用新增入口，不把 prepare 配置交给旧运行器。
+[真实 HSSD middle 六分支验收](hssd_v_middle_results_2026-11-13.md)通过：取消 Oracle 动作 22 立即 STOP，延迟 0、取消后路程 0；Ignore 延迟 20 动作并多走 3.250 m，正确判失败。[10 任务三类批量](hssd_visual_dataset.md)已准备 60 分支，下一步运行其余 54 个并独立重审；不把 prepare 配置交给旧运行器。
