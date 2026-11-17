@@ -48,10 +48,10 @@ python -B -m scripts.language_annotations inspect \
 先打开审核索引及 RGB，检查是否能唯一指代对应实例，再复制 CSV 编辑：
 
 ```bash
-cp outputs/benchmark_language_annotations_001/annotation_sheet.csv /tmp/mivln_annotations.csv
+cp -n outputs/benchmark_language_annotations_001/annotation_sheet.csv outputs/mivln_annotations.csv
 ```
 
-使用文本编辑器或表格工具修改 `/tmp/mivln_annotations.csv`。仅修改 `text`、`language`、`author`、`note`；
+使用文本编辑器或表格工具修改项目内的 `outputs/mivln_annotations.csv`。`cp -n` 避免覆盖已有工作副本。仅修改 `text`、`language`、`author`、`note`；
 `language` 支持 `en`、`zh-CN`，每条记录保存一个语言版本。修改或明确采纳模板都必须填写真实作者和具体说明。
 未处理行保持原文且作者/说明留空；不能删除行、改变基础任务身份或改写真值标签。
 **实际完成上述编辑后**执行：
@@ -59,7 +59,7 @@ cp outputs/benchmark_language_annotations_001/annotation_sheet.csv /tmp/mivln_an
 ```bash
 python -B -m scripts.language_annotations revise \
   --input-dir outputs/benchmark_language_annotations_001 \
-  --sheet /tmp/mivln_annotations.csv \
+  --sheet outputs/mivln_annotations.csv \
   --output-dir outputs/benchmark_language_annotations_edit_001
 ```
 
@@ -71,7 +71,7 @@ python -B -m scripts.language_annotations revise \
 从**当前版本**复制 `review_decisions.json`，例如：
 
 ```bash
-cp outputs/benchmark_language_annotations_edit_001/review_decisions.json /tmp/mivln_reviews.json
+cp -n outputs/benchmark_language_annotations_edit_001/review_decisions.json outputs/mivln_reviews.json
 ```
 
 审核者结合该版本的 `review_index.md` 和 RGB，填写需要处理的行：
@@ -90,7 +90,7 @@ cp outputs/benchmark_language_annotations_edit_001/review_decisions.json /tmp/mi
 ```bash
 python -B -m scripts.language_annotations review \
   --input-dir outputs/benchmark_language_annotations_edit_001 \
-  --decisions /tmp/mivln_reviews.json \
+  --decisions outputs/mivln_reviews.json \
   --output-dir outputs/benchmark_language_annotations_review_001
 ```
 
