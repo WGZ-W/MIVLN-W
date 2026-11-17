@@ -48,5 +48,7 @@ Deliver each event once, before its action. Preserve pose and history across goa
 
 ## Collaboration & Step Handoffs
 
+- Keep editable annotation and review working copies inside the project, preferably under `outputs/`, outside immutable source packages. Use these project-relative paths in commands instead of `/tmp/` paths, and avoid overwriting existing work.
 - At every task handoff, include a concrete next-step plan: the immediate objective, prerequisites, executable commands when applicable, expected outputs, and acceptance criteria. Clearly distinguish available commands from work that still needs implementation. A next-step plan does not authorize executing additional changes or GPU experiments.
+- When the user says to modify code only, limit edits to source code, tests, and explicitly requested agent instructions; do not run project, simulator, GPU, model, or other experiment scripts. Provide exact commands, expected outputs, and acceptance criteria for the user to run them.
 - At the end of each complete, coherent step, inspect the relevant Git changes and validation results, then explicitly state whether to commit now, defer the commit, or make no commit because nothing changed, with a brief reason. If a commit is appropriate, identify the files or logical groups and suggest a prefixed commit message; distinguish completed checks from pending GPU validation. Do not automatically stage, commit, or push without the user's authorization, and exclude datasets and generated experiment outputs.

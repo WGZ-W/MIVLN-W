@@ -284,10 +284,26 @@ def export(args):
     return 0
 
 
+def compatible_export_bindings(recorded):
+    """Accept current exports and the exact exporter before notes became optional.
+
+    The previous exporter produced identical video/provenance formats. Pin both
+    changed modules to their known old hashes, keeping every other dependency
+    strict so an existing video package can be reviewed without rewriting it.
+    """
+    current = bindings()
+    previous = dict(current)
+    previous.update({
+        "scripts/export_visual_videos.py": "80f1c87b9a3cb361fbb803289040890e62fc6f5783580896ac08437ae5346ce2",
+        "mivln/video_review.py": "5e59e5bbd69062e0f8f49ece49018b29b384b0bee82bd3e9962722f83fd45475",
+    })
+    return recorded == current or recorded == previous
+
+
 def load_export(directory, ffprobe=None):
     manifest = read_json(directory / "manifest.json")
     if (manifest.get("kind") != KIND or type(manifest.get("schema_version")) is not int
-            or manifest["schema_version"] != 1 or manifest.get("code_bindings") != bindings()
+            or manifest["schema_version"] != 1 or not compatible_export_bindings(manifest.get("code_bindings"))
             or manifest.get("human_review_status") != "pending"):
         raise ValueError("Video export/schema/code binding changed")
     path = directory / "private/source_bindings.json"

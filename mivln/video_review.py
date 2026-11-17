@@ -29,11 +29,12 @@ def worksheet(videos):
 
 
 def import_sheet(videos, rows):
-    """Require the whole video roster, real names, notes and explicit decisions.
+    """Require the whole video roster, real names and explicit decisions.
 
     This records claimed review identities, without authenticating them or
     proving that the reviewer really watched a player. Labels/MP4 hashes cannot
     be changed by a review sheet, and no missing row is silently discarded.
+    Notes are optional strings; an empty CSV cell is valid, a missing cell is not.
     """
     if type(rows) is not list or any(type(row) is not dict for row in rows):
         raise ValueError("Playback review rows must be dictionaries")
@@ -57,8 +58,6 @@ def import_sheet(videos, rows):
         if row["decision"] not in ("approve", "reject", "needs_revision"):
             raise ValueError(f"{identity}: unknown review decision")
         person(row["reviewer"])
-        if not row["note"].strip():
-            raise ValueError(f"{identity}: explain the playback review")
         required = {*COMMON, *SPECIFIC[row["task_type"]]}
         for key in CHECKS:
             if key not in required and row[key] != "N/A":

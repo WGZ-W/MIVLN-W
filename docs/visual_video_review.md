@@ -41,15 +41,16 @@ task_007 覆盖本批最长的插入恢复 Oracle 路线；视频选样仅用于
 复制工作表后编辑：
 
 ```bash
-cp outputs/hssd_v_middle_videos_001/review_sheet.csv /tmp/mivln_video_reviews.csv
+cp -n outputs/hssd_v_middle_videos_001/review_sheet.csv outputs/mivln_video_reviews.csv
 ```
 
-保留全部八行，video_id、任务/条件、原任务成功标签及视频哈希均不能修改。
+编辑项目内的 `outputs/mivln_video_reviews.csv`；`cp -n` 避免覆盖已有填写结果。工作副本放在原视频包目录之外，以保持来源绑定有效。保留全部八行，video_id、任务/条件、原任务成功标签及视频哈希均不能修改。
 
 | 字段 | 填写要求 |
 | --- | --- |
 | `decision` | approve / reject / needs_revision；尚未处理行保持整个默认 pending 行 |
-| `reviewer`、`note` | 真实署名与具体播放核对说明，不能留空或使用占位姓名 |
+| `reviewer` | 真实署名，不能留空或使用占位姓名 |
+| `note` | 可留空；建议有问题时注明时间与具体表现 |
 | `watched_full_video` | 实际完整播放后填 true |
 | `rgb_quality` | 核对画面清晰度/可用性 |
 | `intervention_timing` | 核对投递及动作时序 |
@@ -66,7 +67,7 @@ cp outputs/hssd_v_middle_videos_001/review_sheet.csv /tmp/mivln_video_reviews.cs
 ```bash
 python -B -m scripts.export_visual_videos review \
   --input-dir outputs/hssd_v_middle_videos_001 \
-  --sheet /tmp/mivln_video_reviews.csv \
+  --sheet outputs/mivln_video_reviews.csv \
   --output-dir outputs/hssd_v_middle_video_review_001
 
 python -B -m scripts.export_visual_videos status \

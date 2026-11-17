@@ -113,13 +113,31 @@ class VideoReviewTests(unittest.TestCase):
         self.assertTrue(all(row['expected_task_success'] == 'false' for row in result))
         self.assertTrue(all(video['expected_task_success'] is False for video in videos))
 
-    def test_names_notes_full_playback_and_all_applicable_checks_are_required(self):
+    def test_names_full_playback_and_all_applicable_checks_are_required(self):
         videos = self.videos()
-        for field, value in (('reviewer', 'YOUR_REVIEWER_NAME'), ('note', ''), ('watched_full_video', 'false'), ('target_identity', 'false')):
+        for field, value in (('reviewer', 'YOUR_REVIEWER_NAME'), ('watched_full_video', 'false'), ('target_identity', 'false')):
             rows = approve_rows(videos)
             rows[0][field] = value
             with self.subTest(field=field), self.assertRaises(ValueError):
                 video_review.import_sheet(videos, rows)
+
+    def test_notes_can_be_empty_for_each_explicit_decision(self):
+        videos = self.videos()
+        rows = approve_rows(videos)
+        for row, decision in zip(rows, ('approve', 'reject', 'needs_revision')):
+            row.update(note='', decision=decision)
+        result = video_review.import_sheet(videos, rows)
+        self.assertTrue(all(row['note'] == '' for row in result))
+
+    def test_previous_export_bindings_are_supported_but_unknown_changes_are_not(self):
+        previous = dict(cli.bindings())
+        previous.update({
+            'scripts/export_visual_videos.py': '80f1c87b9a3cb361fbb803289040890e62fc6f5783580896ac08437ae5346ce2',
+            'mivln/video_review.py': '5e59e5bbd69062e0f8f49ece49018b29b384b0bee82bd3e9962722f83fd45475',
+        })
+        self.assertTrue(cli.compatible_export_bindings(previous))
+        previous['mivln/video_review.py'] = '0' * 64
+        self.assertFalse(cli.compatible_export_bindings(previous))
 
     def test_review_cannot_drop_video_change_hash_or_fill_na_as_checked(self):
         videos = self.videos()
