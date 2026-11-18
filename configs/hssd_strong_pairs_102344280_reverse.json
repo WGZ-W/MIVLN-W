@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "scene_id": "102344280",
+  "scene_sha256": "cd341cd6c600dad1f428583ad648a7c77c9460ac831d168d0cabec8982d572f0",
+  "reviewer": "WGZ",
+  "review_scope": "approved_strong_instance_relation_only",
+  "pairs": [
+    {
+      "pair_id": "strong_pair_004",
+      "reverse_of": "strong_pair_001",
+      "initial_goal": "target_028",
+      "inserted_or_replacement_goal": "target_051",
+      "initial_description_draft": "the kitchen counter with a black cooktop",
+      "updated_description_draft": "the wooden kitchen island with drawers",
+      "reference_case_id": null,
+      "rationale": "沿用已批准的厨房操作台与岛台关系，原目标改为厨房操作台。",
+      "rgb_sha256": {
+        "target_028": "533ea6348a4ab06454182d9aa6e97ecc37978f976246e7e913cbc914a7c319bd",
+        "target_051": "aa38802e4bc41962b7461d1a04f7c34416ff368d693cef8a1ead169051c3cabd"
+      }
+    },
+    {
+      "pair_id": "strong_pair_005",
+      "reverse_of": "strong_pair_002",
+      "initial_goal": "target_118",
+      "inserted_or_replacement_goal": "target_054",
+      "initial_description_draft": "the low wooden cabinet below the television",
+      "updated_description_draft": "the dark sofa",
+      "reference_case_id": null,
+      "rationale": "沿用已批准的沙发与电视下矮柜关系，原目标改为电视下矮柜。",
+      "rgb_sha256": {
+        "target_118": "2653f8726dfadc563454afc6a196a04b8dff337f552197c7f604f4ee4094105d",
+        "target_054": "738a71bf93d582d2305ddd155adf59695251667c259950664a524fef6a5745f4"
+      }
+    },
+    {
+      "pair_id": "strong_pair_006",
+      "reverse_of": "strong_pair_003",
+      "initial_goal": "target_060",
+      "inserted_or_replacement_goal": "target_056",
+      "initial_description_draft": "the freestanding coat rack next to the wooden bench",
+      "updated_description_draft": "the wooden bench with a slatted back next to the coat rack",
+      "reference_case_id": null,
+      "rationale": "沿用已批准的长凳与衣帽架关系，原目标改为衣帽架。",
+      "rgb_sha256": {
+        "target_060": "b4939103f078ff48bbd0932b3fdfdcc0300af8b835e7e9696dec92fade4ef9c7",
+        "target_056": "5d940c742818931cc7bbed1390d8d493547da714088875e042fba2dda016783a"
+      }
+    }
+  ]
+}
