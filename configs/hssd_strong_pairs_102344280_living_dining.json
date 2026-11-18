@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "scene_id": "102344280",
+  "scene_sha256": "cd341cd6c600dad1f428583ad648a7c77c9460ac831d168d0cabec8982d572f0",
+  "reviewer": "WGZ",
+  "review_scope": "approved_strong_instance_relation_only",
+  "review_source": "用户在会话中确认第二组实例关系",
+  "pairs": [
+    {
+      "pair_id": "strong_pair_007",
+      "initial_goal": "target_054",
+      "inserted_or_replacement_goal": "target_076",
+      "initial_description_draft": "the dark sofa",
+      "updated_description_draft": "the low coffee table with a white vase in front of the dark sofa",
+      "reference_case_id": "task_002_replacement_middle",
+      "rationale": "沙发与其前方茶几属于同一休息区域，具有明确配套关系。",
+      "rgb_sha256": {
+        "target_054": "738a71bf93d582d2305ddd155adf59695251667c259950664a524fef6a5745f4",
+        "target_076": "c96e7f9c80d2e9264272da6a82bd9aa2bd24fd4c94102fc1d09b8b75da78df03"
+      }
+    },
+    {
+      "pair_id": "strong_pair_008",
+      "initial_goal": "target_076",
+      "inserted_or_replacement_goal": "target_054",
+      "initial_description_draft": "the low coffee table with a white vase in front of the dark sofa",
+      "updated_description_draft": "the dark sofa",
+      "reference_case_id": null,
+      "rationale": "沿用沙发与茶几已确认的强相关关系，原目标为茶几。",
+      "rgb_sha256": {
+        "target_076": "c96e7f9c80d2e9264272da6a82bd9aa2bd24fd4c94102fc1d09b8b75da78df03",
+        "target_054": "738a71bf93d582d2305ddd155adf59695251667c259950664a524fef6a5745f4"
+      }
+    },
+    {
+      "pair_id": "strong_pair_009",
+      "initial_goal": "target_051",
+      "inserted_or_replacement_goal": "target_112",
+      "initial_description_draft": "the wooden kitchen island with drawers",
+      "updated_description_draft": "the rectangular dining table with fruit on top",
+      "reference_case_id": "task_001_replacement_middle",
+      "rationale": "厨房岛台与餐桌属于同一备餐和用餐区域，具有明确功能联系。",
+      "rgb_sha256": {
+        "target_051": "aa38802e4bc41962b7461d1a04f7c34416ff368d693cef8a1ead169051c3cabd",
+        "target_112": "6080aa378ac59066444b53b70e0ed20e62cc43b7831ddaaef7b552955d8c113d"
+      }
+    }
+  ]
+}
